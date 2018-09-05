@@ -1,0 +1,80 @@
+plugins {
+    id 'pl.allegro.tech.build.axion-release' version '1.3.2'
+}
+
+group 'com.rundeck'
+
+ext.rundeckPluginVersion = '1.2'
+ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep'
+ext.pluginName = 'Git Plugin'
+ext.pluginDescription = 'Git Plugin'
+
+scmVersion {
+    tag {
+        prefix = ''
+        versionSeparator = ''
+        def origDeserialize=deserialize
+        //apend .0 to satisfy semver if the tag version is only X.Y
+        deserialize = { config, position, tagName ->
+            def orig = origDeserialize(config, position, tagName)
+            if (orig.split('\\.').length < 3) {
+                orig += ".0"
+            }
+            orig
+        }
+    }
+}
+project.version = scmVersion.version
+
+apply plugin: 'groovy'
+apply plugin: 'java'
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    pluginLibs
+
+    compile {
+        extendsFrom pluginLibs
+    }
+}
+
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.3.11'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+
+    compile group: 'org.rundeck', name: 'rundeck-core', version: '2.11.4'
+
+    pluginLibs( 'org.eclipse.jgit:org.eclipse.jgit:3.7.1.201504261725-r') {
+        exclude module: 'slf4j-api'
+        exclude module: 'jsch'
+        exclude module: 'commons-logging'
+    }
+
+    testCompile "org.codehaus.groovy:groovy-all:2.3.7"
+    testCompile "org.spockframework:spock-core:0.7-groovy-2.0"
+    testCompile "cglib:cglib-nodep:2.2.2"
+    testCompile 'org.objenesis:objenesis:1.4'
+}
+
+
+task copyToLib(type: Copy) {
+    into "$buildDir/output/lib"
+    from configurations.pluginLibs
+}
+
+jar {
+    from "$buildDir/output"
+    manifest {
+        def libList = configurations.pluginLibs.collect{'lib/' + it.name}.join(' ')
+        attributes 'Rundeck-Plugin-Classnames': pluginClassNames
+        attributes 'Rundeck-Plugin-File-Version': project.version
+        attributes 'Rundeck-Plugin-Version': rundeckPluginVersion
+        attributes 'Rundeck-Plugin-Archive': 'true'
+        attributes 'Rundeck-Plugin-Libs': "${libList}"
+    }
+    dependsOn(copyToLib)
+}
