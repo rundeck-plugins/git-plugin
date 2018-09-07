@@ -1,5 +1,6 @@
 package com.rundeck.plugin
 
+import com.dtolabs.rundeck.core.execution.ExecutionListener
 import com.dtolabs.rundeck.core.execution.workflow.steps.StepException
 import com.dtolabs.rundeck.core.plugins.Plugin
 import com.dtolabs.rundeck.core.plugins.configuration.Describable
@@ -95,7 +96,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
             gitManager.setSshPrivateKey(key)
         }
 
-        PluginLogger logger = context.getLogger()
+        ExecutionListener logger = context.getExecutionContext().getExecutionListener()
         logger.log(3, "Cloning Repo ${gitManager.gitURL} to local path ${localPath}")
 
         File base = new File(localPath)
@@ -104,6 +105,9 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
             base.mkdir()
         }
 
+        Map<String, String> meta = new HashMap<>();
+        meta.put("content-data-type", "application/json");
+
         try{
             gitManager.cloneOrCreate(base)
 
@@ -111,7 +115,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
                 return [name: file.name, directory: file.directory, file: file.file, path: file.absolutePath]
             }
             def json = JsonOutput.toJson(jsonMap)
-            logger.log(2, json)
+            logger.log(2, json, meta)
 
         }catch(Exception e){
             logger.log(0, e.getMessage())
