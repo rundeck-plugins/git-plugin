@@ -94,7 +94,9 @@ class GitManager {
                 setBranch(this.branch).
                 setRemote(REMOTE_NAME).
                 setDirectory(base).
-                setURI(this.gitURL)
+                setURI(this.gitURL).
+                setCloneSubmodules(true)
+
 
         try {
             setupTransportAuthentication(sshConfig, cloneCommand, this.gitURL)

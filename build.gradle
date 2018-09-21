@@ -10,6 +10,7 @@ ext.pluginName = 'Git Plugin'
 ext.pluginDescription = 'Git Plugin'
 
 scmVersion {
+    ignoreUncommittedChanges = false
     tag {
         prefix = ''
         versionSeparator = ''
@@ -48,7 +49,7 @@ dependencies {
 
     compile group: 'org.rundeck', name: 'rundeck-core', version: '2.11.4'
 
-    pluginLibs( 'org.eclipse.jgit:org.eclipse.jgit:3.7.1.201504261725-r') {
+    pluginLibs( 'org.eclipse.jgit:org.eclipse.jgit:4.4.0.201606070830-r') {
         exclude module: 'slf4j-api'
         exclude module: 'jsch'
         exclude module: 'commons-logging'
