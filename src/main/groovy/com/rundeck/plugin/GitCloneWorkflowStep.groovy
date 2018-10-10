@@ -8,18 +8,22 @@ import com.dtolabs.rundeck.core.plugins.configuration.Description
 import com.dtolabs.rundeck.core.plugins.configuration.PropertyUtil
 import com.dtolabs.rundeck.plugins.PluginLogger
 import com.dtolabs.rundeck.plugins.ServiceNameConstants
+import com.dtolabs.rundeck.core.plugins.configuration.PropertyScope
 import com.dtolabs.rundeck.plugins.descriptions.PluginDescription
 import com.dtolabs.rundeck.plugins.step.PluginStepContext
 import com.dtolabs.rundeck.plugins.step.StepPlugin
 import com.dtolabs.rundeck.plugins.util.DescriptionBuilder
 import com.rundeck.plugin.util.GitPluginUtil
+import java.nio.file.Path
+import java.nio.file.Paths
+
 import groovy.json.JsonOutput
 
 
 @Plugin(name = GitCloneWorkflowStep.PROVIDER_NAME, service = ServiceNameConstants.WorkflowStep)
 @PluginDescription(title = GitCloneWorkflowStep.PROVIDER_TITLE, description = GitCloneWorkflowStep.PROVIDER_DESCRIPTION)
 class GitCloneWorkflowStep implements StepPlugin, Describable{
-    public static final String PROVIDER_NAME = "git-clone-step";
+    public static final String PROVIDER_NAME = "git-clone-step"
     public static final String PROVIDER_TITLE = "Git / Clone"
     public static final String PROVIDER_DESCRIPTION ="Clone a Git repository on Rundeck server"
 
@@ -29,6 +33,7 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
     public final static String GIT_HOSTKEY_CHECKING="strictHostKeyChecking"
     public final static String GIT_KEY_STORAGE="gitKeyPath"
     public final static String GIT_PASSWORD_STORAGE="gitPasswordPath"
+    public final static String GIT_PROJECT_BASED_SUBDIRECTORY="gitUseProjectBasedSubdirectory"
 
 
     final static Map<String, Object> renderingOptionsAuthentication = GitPluginUtil.getRenderOpt("Authentication", false)
@@ -63,8 +68,10 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
                                                        .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,
                                                                                      "yes",GitResourceModelFactory.LIST_HOSTKEY_CHECKING,null, renderingOptionsAuthentication))
-                                                       .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path", 'SSH Key Path', false,
+    .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path", 'SSH Key Path', false,
                                                                                      null,null,null, renderingOptionsAuthenticationKey))
+    .property(PropertyUtil.bool(GIT_PROJECT_BASED_SUBDIRECTORY, "Use per-project subdirectories", "Check repositories out in project-based subdirectories of the Rundeck home directory.",
+    false, "true", PropertyScope.ProjectOnly, renderingOptionsConfig))
                                                        .build()
 
     GitCloneWorkflowStep() {
@@ -84,7 +91,16 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
             gitManager = new GitManager(proConfiguration)
         }
 
-        def localPath=configuration.get(GIT_BASE_DIRECTORY)
+        String localPath
+
+        if (GIT_PROJECT_BASED_SUBDIRECTORY) {
+            String configPath = configuration.get(GIT_BASE_DIRECTORY)
+            String project = context.getFrameworkProject()
+            Path localPath_p = Paths.get(project, configPath)
+            localPath = localPath_p.toString()
+        } else {
+            localPath = configuration.get(GIT_BASE_DIRECTORY)
+        }
 
         if(configuration.get(GIT_PASSWORD_STORAGE)){
             def password = GitPluginUtil.getFromKeyStorage(configuration.get(GIT_PASSWORD_STORAGE), context)
