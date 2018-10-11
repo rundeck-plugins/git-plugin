@@ -93,7 +93,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
         String localPath
 
-        if (GIT_PROJECT_BASED_SUBDIRECTORY) {
+        if (Boolean.parseBoolean((String) configuration.get(GIT_PROJECT_BASED_SUBDIRECTORY))) {
             String configPath = configuration.get(GIT_BASE_DIRECTORY)
             String project = context.getFrameworkProject()
             Path localPath_p = Paths.get(project, configPath)
