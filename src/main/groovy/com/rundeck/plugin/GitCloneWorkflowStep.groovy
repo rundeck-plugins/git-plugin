@@ -71,7 +71,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
     .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path", 'SSH Key Path', false,
                                                                                      null,null,null, renderingOptionsAuthenticationKey))
     .property(PropertyUtil.bool(GIT_PROJECT_BASED_SUBDIRECTORY, "Use per-project subdirectories", "Check repositories out in project-based subdirectories of the Rundeck home directory.",
-    false, "true", PropertyScope.ProjectOnly, renderingOptionsConfig))
+    false, "false", PropertyScope.Project, renderingOptionsConfig))
                                                        .build()
 
     GitCloneWorkflowStep() {
