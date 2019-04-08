@@ -7,7 +7,7 @@ group 'com.rundeck'
 ext.rundeckPluginVersion = '1.2'
 ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep'
 ext.pluginName = 'Git Plugin'
-ext.pluginDescription = 'Git Plugin'
+ext.pluginDescription = 'This is a git plugin (based on Jgit) which contain a Resource model and worflow steps'
 
 scmVersion {
     ignoreUncommittedChanges = false
@@ -71,6 +71,14 @@ jar {
     from "$buildDir/output"
     manifest {
         def libList = configurations.pluginLibs.collect{'lib/' + it.name}.join(' ')
+        attributes 'Rundeck-Plugin-Name' : pluginName
+        attributes 'Rundeck-Plugin-Description' : pluginDescription
+        attributes 'Rundeck-Plugin-Rundeck-Compatibility-Version': '2.11.4+'
+        attributes 'Rundeck-Plugin-Tags': 'java,workflow steps,resource model'
+        attributes 'Rundeck-Plugin-License': 'Apache 2.0'
+        attributes 'Rundeck-Plugin-Source-Link': 'https://github.com/rundeck-plugins/git-plugin'
+        attributes 'Rundeck-Plugin-Target-Host-Compatibility': 'all'
+        attributes 'Rundeck-Plugin-Author': 'Rundeck, Inc.'
         attributes 'Rundeck-Plugin-Classnames': pluginClassNames
         attributes 'Rundeck-Plugin-File-Version': project.version
         attributes 'Rundeck-Plugin-Version': rundeckPluginVersion
