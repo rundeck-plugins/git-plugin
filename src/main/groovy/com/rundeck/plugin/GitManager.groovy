@@ -35,10 +35,10 @@ class GitManager {
     String gitURL
 
     GitManager(Properties configuration) {
-        this.gitURL=configuration.getProperty(GitResourceModelFactory.GIT_URL)
+        this.gitURL = configuration.getProperty(GitResourceModelFactory.GIT_URL)
         this.branch = configuration.getProperty(GitResourceModelFactory.GIT_BRANCH)
-        this.fileName=configuration.getProperty(GitResourceModelFactory.GIT_FILE)
-        this.strictHostKeyChecking=configuration.getProperty(GitResourceModelFactory.GIT_HOSTKEY_CHECKING)
+        this.fileName = configuration.getProperty(GitResourceModelFactory.GIT_FILE)
+        this.strictHostKeyChecking = configuration.getProperty(GitResourceModelFactory.GIT_HOSTKEY_CHECKING)
 
     }
 
@@ -59,17 +59,19 @@ class GitManager {
             def config = agit.getRepository().getConfig()
             def found = config.getString("remote", REMOTE_NAME, "url")
 
-            def needsClone=false;
+            def needsClone = false;
 
             if (found != this.gitURL) {
                 logger.debug("url differs, re-cloning ${found}!=${this.gitURL}")
                 needsClone = true
-            }else if (agit.repository.getFullBranch() != "refs/heads/$branch") {
+            } else if (agit.repository.getFullBranch() != "refs/heads/$branch") {
                 logger.debug("branch differs, re-cloning")
                 needsClone = true
+            } else {
+                performPull(agit)
             }
 
-            if(needsClone){
+            if (needsClone) {
                 removeWorkdir(base)
                 performClone(base)
                 return
@@ -109,10 +111,32 @@ class GitManager {
         repo = git.getRepository()
     }
 
+
+    private void performPull(Git git) {
+
+        def pullCommand = git.pull()
+                .setRebase(true)
+
+        try {
+            setupTransportAuthentication(sshConfig, pullCommand, this.gitURL)
+            PullResult result = pullCommand.call()
+            if (!result.isSuccessful()) {
+                logger.info("Pull is not successful.")
+            } else {
+                logger.debug("Pull is not successful.")
+            }
+        } catch (Exception e) {
+            e.printStackTrace()
+            logger.debug("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
+            throw new Exception("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
+        }
+        repo = git.getRepository()
+    }
+
     void setupTransportAuthentication(
             Map<String, String> sshConfig,
             TransportCommand command,
-            String url = null) throws Exception{
+            String url = null) throws Exception {
         if (!url) {
             url = command.repository.config.getString('remote', REMOTE_NAME, 'url')
         }
@@ -122,7 +146,7 @@ class GitManager {
 
         URIish u = new URIish(url);
         logger.debug("transport url ${u}, scheme ${u.scheme}, user ${u.user}")
-        if ((u.scheme == null || u.scheme == 'ssh') && u.user && (sshPrivateKeyPath||sshPrivateKey) ) {
+        if ((u.scheme == null || u.scheme == 'ssh') && u.user && (sshPrivateKeyPath || sshPrivateKey)) {
 
             byte[] keyData
             if (sshPrivateKeyPath) {
@@ -130,7 +154,7 @@ class GitManager {
                 Path path = Paths.get(sshPrivateKeyPath);
                 keyData = Files.readAllBytes(path);
 
-            }else if(sshPrivateKey){
+            } else if (sshPrivateKey) {
                 logger.debug("using ssh private key")
                 keyData = sshPrivateKey.getBytes()
             }
@@ -149,11 +173,11 @@ class GitManager {
 
     PullResult gitPull(Git git1 = null) {
         def pullCommand = (git1 ?: git).pull().setRemote(REMOTE_NAME).setRemoteBranchName(branch)
-        setupTransportAuthentication(sshConfig,pullCommand)
+        setupTransportAuthentication(sshConfig, pullCommand)
         pullCommand.call()
     }
 
-    def gitCommitAndPush(){
+    def gitCommitAndPush() {
 
         ////PERFORM COMMIT
         git.add()
@@ -187,7 +211,7 @@ class GitManager {
             sb.append it.toString()
         }
 
-        String message=""
+        String message = ""
         def failedUpdates = updates.findAll { it.status != RemoteRefUpdate.Status.OK }
         if (failedUpdates) {
             message = "Some updates failed: " + failedUpdates
@@ -203,14 +227,14 @@ class GitManager {
 
         File base = new File(localPath)
 
-        if(!base){
+        if (!base) {
             base.mkdir()
         }
 
         //start the new repo, if the repo is create nothing will be done
         this.cloneOrCreate(base)
 
-        File file = new File(localPath+"/"+fileName)
+        File file = new File(localPath + "/" + fileName)
 
         //always perform a pull
         //TODO: check if it is needed check for the repo status
