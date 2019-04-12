@@ -64,7 +64,13 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
 ## GIT Clone Workflow Step
 
-This plugin clone a git repo into a rundeck server folder
+This plugin clone a git repo into a rundeck server folder.
+
+For some use cases, it might be necessary to only allow checking out repositories in directories relative to the Rundeck home directory.
+Allow users to checkout in any location on disk might be a security issue.
+
+The setting `project.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
+can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
 
 ### Configuration
 
@@ -74,7 +80,7 @@ You need to set up the following options to use the plugin:
 
 ### Repo Settings
 
-* **Base Directory**: Directory for checkout
+* **Base Directory**: Directory for checkout. If `project.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` is set to true in the project configuration, this will be relative to a project-based subdirectory.
 * **Git URL**: Checkout URL.
     See [git-clone](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html)
     specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html#URLS) section.
