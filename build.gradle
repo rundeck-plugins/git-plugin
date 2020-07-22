@@ -48,6 +48,7 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
 
     compile group: 'org.rundeck', name: 'rundeck-core', version: '2.11.4'
+    compile 'org.slf4j:slf4j-api:1.7.30'
 
     pluginLibs( 'org.eclipse.jgit:org.eclipse.jgit:4.4.0.201606070830-r') {
         exclude module: 'slf4j-api'
