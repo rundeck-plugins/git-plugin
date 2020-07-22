@@ -1,5 +1,5 @@
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.3.2'
+    id 'pl.allegro.tech.build.axion-release' version '1.11.0'
 }
 
 group 'com.rundeck'
@@ -10,7 +10,7 @@ ext.pluginName = 'Git Plugin'
 ext.pluginDescription = 'This is a git plugin (based on Jgit) which contain a Resource model and worflow steps'
 
 scmVersion {
-    ignoreUncommittedChanges = false
+    ignoreUncommittedChanges = true
     tag {
         prefix = ''
         versionSeparator = ''
