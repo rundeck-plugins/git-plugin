@@ -31,6 +31,7 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
 
     public final static String GIT_URL="gitUrl"
     public final static String GIT_BASE_DIRECTORY="gitBaseDirectory"
+    public final static String GIT_LOG_DISABLE ="gitLogDisable"
     public final static String GIT_FILE="gitFile"
     public final static String GIT_FORMAT_FILE="gitFormatFile"
     public final static String GIT_BRANCH="gitBranch"
@@ -66,6 +67,8 @@ Some examples:
             null,null,null, renderingOptionsConfig))
             .property(PropertyUtil.string(GIT_BRANCH, "Branch", "Checkout branch.", true,
             "master",null,null, renderingOptionsConfig))
+            .property(PropertyUtil.bool(GIT_LOG_DISABLE, "Disable log output", "Enabling this flag, the plugin will not show the output log", true,
+            "false",null, renderingOptionsConfig))
             .property(PropertyUtil.string(GIT_FILE, "Resource model File", "Resource model file inside the github repo.", true,
             null,null,null, renderingOptionsConfig))
             .property(PropertyUtil.select(GIT_FORMAT_FILE, "File Format", 'File Format', true,

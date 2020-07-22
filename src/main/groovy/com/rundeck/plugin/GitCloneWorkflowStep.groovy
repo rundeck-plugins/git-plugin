@@ -28,6 +28,7 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
 
     public final static String GIT_URL="gitUrl"
     public final static String GIT_BASE_DIRECTORY="gitBaseDirectory"
+    public final static String GIT_LOG_DISABLE ="gitLogDisable"
     public final static String GIT_BRANCH="gitBranch"
     public final static String GIT_HOSTKEY_CHECKING="strictHostKeyChecking"
     public final static String GIT_KEY_STORAGE="gitKeyPath"
@@ -62,6 +63,8 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
                                                                                      null,null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_BRANCH, "Branch", "Checkout branch.", true,
                                                                                      "master",null,null, renderingOptionsConfig))
+                                                       .property(PropertyUtil.bool(GIT_LOG_DISABLE, "Disable log output", "Enabling this flag, the plugin will not show the output log", true,
+                                                                                     "false",null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password", 'Password to authenticate remotely', false,
                                                                                      null,null,null, renderingOptionsAuthenticationPassword))
                                                        .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
@@ -126,11 +129,13 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
         try{
             gitManager.cloneOrCreate(base)
 
-            def jsonMap = base.listFiles().collect {file ->
-                return [name: file.name, directory: file.directory, file: file.file, path: file.absolutePath]
+            if (!Boolean.parseBoolean((String) configuration.get(GIT_LOG_DISABLE))) {
+                def jsonMap = base.listFiles().collect { file ->
+                    return [name: file.name, directory: file.directory, file: file.file, path: file.absolutePath]
+                }
+                def json = JsonOutput.toJson(jsonMap)
+                logger.log(2, json, meta)
             }
-            def json = JsonOutput.toJson(jsonMap)
-            logger.log(2, json, meta)
 
         }catch(Exception e){
             logger.log(0, e.getMessage())
