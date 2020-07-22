@@ -1,7 +1,6 @@
 package com.rundeck.plugin
 
 import com.rundeck.plugin.util.PluginSshSessionFactory
-import org.apache.log4j.Logger
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.PullResult
 import org.eclipse.jgit.api.TransportCommand
@@ -16,12 +15,14 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 /**
  * Created by luistoledo on 12/20/17.
  */
 class GitManager {
 
-    static Logger logger = Logger.getLogger(GitManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(GitManager.class);
 
     public static final String REMOTE_NAME = "origin"
     Git git
