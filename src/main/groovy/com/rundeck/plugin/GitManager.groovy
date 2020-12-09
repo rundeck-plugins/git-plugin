@@ -5,11 +5,13 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.PullResult
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.lib.SubmoduleConfig.FetchRecurseSubmodulesMode
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import org.eclipse.jgit.util.FileUtils
+import org.eclipse.jgit.api.SubmoduleUpdateCommand
 
 import java.nio.file.Files
 import java.nio.file.Path
@@ -83,6 +85,7 @@ class GitManager {
         } else {
             performClone(base)
         }
+        repo.close()
     }
 
 
@@ -100,7 +103,6 @@ class GitManager {
                 setURI(this.gitURL).
                 setCloneSubmodules(true)
 
-
         try {
             setupTransportAuthentication(sshConfig, cloneCommand, this.gitURL)
             git = cloneCommand.call()
@@ -117,15 +119,21 @@ class GitManager {
 
         def pullCommand = git.pull()
                 .setRebase(true)
+                .setRecurseSubmodules(FetchRecurseSubmodulesMode.YES)
 
         try {
             setupTransportAuthentication(sshConfig, pullCommand, this.gitURL)
             PullResult result = pullCommand.call()
+            
             if (!result.isSuccessful()) {
                 logger.info("Pull is not successful.")
             } else {
                 logger.debug("Pull is not successful.")
             }
+
+            def submoduleUpdateCommand = new SubmoduleUpdateCommand(git.getRepository())
+            submoduleUpdateCommand.call()
+
         } catch (Exception e) {
             e.printStackTrace()
             logger.debug("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
@@ -173,7 +181,10 @@ class GitManager {
     }
 
     PullResult gitPull(Git git1 = null) {
-        def pullCommand = (git1 ?: git).pull().setRemote(REMOTE_NAME).setRemoteBranchName(branch)
+        def pullCommand = (git1 ?: git).pull()
+                .setRemote(REMOTE_NAME)
+                .setRemoteBranchName(branch)
+                .setRecurseSubmodules(FetchRecurseSubmodulesMode.YES)
         setupTransportAuthentication(sshConfig, pullCommand)
         pullCommand.call()
     }
