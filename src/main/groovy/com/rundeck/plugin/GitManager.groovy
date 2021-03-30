@@ -3,6 +3,7 @@ package com.rundeck.plugin
 import com.rundeck.plugin.util.PluginSshSessionFactory
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.PullResult
+import org.eclipse.jgit.transport.PushResult
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
@@ -52,6 +53,7 @@ class GitManager {
         config
     }
 
+
     void cloneOrCreate(File base) throws Exception {
         if (base.isDirectory() && new File(base, ".git").isDirectory()) {
             def arepo = new FileRepositoryBuilder().setGitDir(new File(base, ".git")).setWorkTree(base).build()
@@ -85,6 +87,15 @@ class GitManager {
         }
     }
 
+    void push(File base) {
+        def arepo = new FileRepositoryBuilder().setGitDir(new File(base, ".git")).setWorkTree(base).build()
+        def agit = new Git(arepo)
+
+        git = agit
+        repo = arepo
+
+        performPush(git)
+    }
 
     private void removeWorkdir(File base) {
         FileUtils.delete(base, FileUtils.RECURSIVE)
@@ -132,6 +143,21 @@ class GitManager {
             throw new Exception("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
         }
         repo = git.getRepository()
+    }
+
+    private void performPush(Git git) {
+        def pushCommand = git.push()
+                .setPushAll()
+
+        try {
+            setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
+            pushCommand.call()
+            logger.info("Push is not successful.")
+        } catch (Exception e) {
+            e.printStackTrace()
+            logger.debug("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
+            throw new Exception("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
+        }
     }
 
     void setupTransportAuthentication(
