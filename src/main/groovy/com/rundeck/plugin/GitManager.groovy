@@ -97,6 +97,26 @@ class GitManager {
         performPush(git)
     }
 
+    void commit(File base, String message) {
+        def arepo = new FileRepositoryBuilder().setGitDir(new File(base, ".git")).setWorkTree(base).build()
+        def agit = new Git(arepo)
+
+        git = agit
+        repo = arepo
+
+        performCommit(git, message)
+    }
+
+    void add(File base, String filePattern) {
+        def arepo = new FileRepositoryBuilder().setGitDir(new File(base, ".git")).setWorkTree(base).build()
+        def agit = new Git(arepo)
+
+        git = agit
+        repo = arepo
+
+        performAdd(git, filePattern)
+    }
+
     private void removeWorkdir(File base) {
         FileUtils.delete(base, FileUtils.RECURSIVE)
     }
@@ -157,6 +177,36 @@ class GitManager {
             e.printStackTrace()
             logger.debug("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
             throw new Exception("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
+        }
+    }
+
+    private void performCommit(Git git, String message) {
+        def commitCommand = git.commit()
+                .setMessage(message)
+
+        try {
+            // setupTransportAuthentication(sshConfig, commitCommand, this.gitURL)
+            commitCommand.call()
+            logger.info("Commit is not successful.")
+        } catch (Exception e) {
+            e.printStackTrace()
+            logger.debug("Failed committing the repository to ${this.gitURL}: ${e.message}", e)
+            throw new Exception("Failed committing the repository to ${this.gitURL}: ${e.message}", e)
+        }
+    }
+
+    private void performAdd(Git git, String filePattern) {
+        def addCommand = git.add()
+                .addFilepattern(filePattern)
+
+        try {
+            // setupTransportAuthentication(sshConfig, addCommand, this.gitURL)
+            addCommand.call()
+            logger.info("Add is not successful.")
+        } catch (Exception e) {
+            e.printStackTrace()
+            logger.debug("Failed adding the repository to ${this.gitURL}: ${e.message}", e)
+            throw new Exception("Failed adding the repository to ${this.gitURL}: ${e.message}", e)
         }
     }
 
