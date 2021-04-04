@@ -5,7 +5,7 @@ plugins {
 group 'com.rundeck'
 
 ext.rundeckPluginVersion = '1.2'
-ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep'
+ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep,com.rundeck.plugin.GitPushWorkflowStep,com.rundeck.plugin.GitCommitWorkflowStep,com.rundeck.plugin.GitAddWorkflowStep'
 ext.pluginName = 'Git Plugin'
 ext.pluginDescription = 'This is a git plugin (based on Jgit) which contain a Resource model and worflow steps'
 

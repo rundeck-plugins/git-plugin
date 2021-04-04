@@ -62,23 +62,13 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 * The plugin needs to clone the full repo on the local directory path (Base Directory option) to get the file that will be added to the resource model.
 * Any time that you edit the nodes on the GUI, the commit will be perfomed with the message `Edit node from GUI`  (it is not editable)
 
-## GIT Clone Workflow Step
+## Workflow Steps
 
-This plugin clone a git repo into a rundeck server folder.
-
-For some use cases, it might be necessary to only allow checking out repositories in directories relative to the Rundeck home directory.
-Allow users to checkout in any location on disk might be a security issue.
-
-The setting `project.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
-can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
-
-### Configuration
-
-You need to set up the following options to use the plugin:
+This plugin can clone/pull, add, commit, and push a git repository via 4 WorkflowSteps. All these steps have some generic configuration:
 
 ![](images/clone-workflow-step.png)
 
-### Repo Settings
+##### Repo Settings
 
 * **Base Directory**: Directory for checkout. If `project.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` is set to true in the project configuration, this will be relative to a project-based subdirectory.
 * **Git URL**: Checkout URL.
@@ -91,12 +81,78 @@ You need to set up the following options to use the plugin:
     * `ftp[s]://host.xz[:port]/path/to/repo.git/`
     * `rsync://host.xz/path/to/repo.git/`
 
-* **Branch**: Checkout branch
 
-### Authentication
+##### Authentication
 
 * **Password Storage Path**: Password storage path to authenticate remotely
 * **SSH: Strict Host Key Checking**: Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
 * **SSH Key Storage Path**: SSH Key storage path to authenticate
 
+### GIT Clone Workflow Step
+
+This plugin can clone a git repo into a rundeck server folder.
+
+For some use cases, it might be necessary to only allow checking out repositories in directories relative to the Rundeck home directory.
+Allow users to checkout in any location on disk might be a security issue.
+
+The setting `project.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-clone-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
+can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
+
+#### Configuration
+
+You need to set up following additional options to use the plugin:
+
+##### Repo Settings
+
+* **Branch**: Checkout branch
+
+
+### GIT Push Workflow Step
+
+This plugin pushes a git repo from a prior created repo folder.
+
+For some use cases, it might be necessary to only allow pushing repositories in directories relative to the Rundeck home directory.
+
+The setting `project.plugin.WorkflowStep.git-push-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-push-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
+can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
+
+#### Configuration
+
+See above, nothing unique with this WorkflowStep.
+
+### GIT Add Workflow Step
+
+This plugin adds any new content from the repo for the next commit with an optional filter ability.
+
+For some use cases, it might be necessary to only allow adding to repositories in directories relative to the Rundeck home directory.
+
+The setting `project.plugin.WorkflowStep.git-add-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-add-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
+can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
+
+#### Configuration
+
+You need to set up following additional options to use the plugin:
+
+##### Repo Settings
+
+* **File Pattern**: File Pattern of files to be added. See [addFilepattern](http://archive.eclipse.org/jgit/docs/jgit-2.0.0.201206130900-r/apidocs/org/eclipse/jgit/api/AddCommand.html#addFilepattern(java.lang.String)) for more details
+
+### GIT Commit Workflow Step
+
+This plugin commits to a git repo from a prior created repo folder.
+
+For some use cases, it might be necessary to only allow committing to repositories in directories relative to the Rundeck home directory.
+
+The setting `project.plugin.WorkflowStep.git-commit-step.gitUseProjectBasedSubdirectory` (per project) or  `framework.plugin.WorkflowStep.git-commit-step.gitUseProjectBasedSubdirectory` (Rundeck-wide)
+can be set to `true` to enforce this (default is `false`). All values of `Base Directory` will be relative to a project-based subdirectory of the Rundeck home directory (e.g. `/var/lib/rundeck/A_Project`).
+
+#### Configuration
+
+You need to set up following additional options to use the plugin:
+
+##### Repo Settings
+
+* **Message**: Commit message to be used. Defaults to `Rundeck Commit`
+* **Add**: Adds all contents of the git repo before commiting. Defaults to `False`. If you need to be more specific, please use `GIT / Add` workflow step.
+* **Push**: Pushes the repository after commiting the changes. Defaults to `False`.
