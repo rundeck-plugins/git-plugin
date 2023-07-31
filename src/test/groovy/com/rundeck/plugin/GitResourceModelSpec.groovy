@@ -5,7 +5,6 @@ import com.dtolabs.rundeck.core.common.INodeSet
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParser
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParserService
 import spock.lang.Specification
-import org.apache.log4j.Logger
 
 /**
  * Created by luistoledo on 12/22/17.
