@@ -10,6 +10,12 @@ import com.dtolabs.rundeck.core.resources.format.ResourceFormatParser
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParserException
 import com.dtolabs.rundeck.core.resources.format.UnsupportedFormatException
 import com.dtolabs.utils.Streams
+import com.dtolabs.rundeck.core.execution.ExecutionContext;
+import com.dtolabs.rundeck.core.execution.ExecutionContextImpl;
+import com.rundeck.plugin.util.GitPluginUtil
+import org.rundeck.app.spi.Services;
+import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree;
+import com.dtolabs.rundeck.core.execution.ExecutionListener
 
 
 /**
@@ -31,6 +37,42 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
         this.writable=true;
     }
 
+    GitResourceModel(Services services, Properties configuration, Framework framework) {
+
+        this.configuration = configuration
+        this.framework = framework
+
+        this.extension=configuration.getProperty(GitResourceModelFactory.GIT_FORMAT_FILE)
+        this.writable=Boolean.valueOf(configuration.getProperty(GitResourceModelFactory.WRITABLE))
+        this.fileName=configuration.getProperty(GitResourceModelFactory.GIT_FILE)
+        this.localPath=configuration.getProperty(GitResourceModelFactory.GIT_BASE_DIRECTORY)
+
+        if(gitManager==null){
+            gitManager = new GitManager(configuration)
+        }
+
+        ExecutionContext context = null;
+
+        if(services!=null){
+            context = new ExecutionContextImpl.Builder()
+                    .framework(framework)
+                    .storageTree(services.getService(KeyStorageTree.class))
+                    .build();
+        }else{
+            context = new ExecutionContextImpl.Builder()
+                    .framework(framework)
+                    .build();
+        }
+
+        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)){
+            def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE), context)
+            gitManager.setGitPassword(password)
+        }
+
+        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {
+            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE))
+        }
+    }
 
     GitResourceModel(Properties configuration, Framework framework) {
         this.configuration = configuration
@@ -45,9 +87,20 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             gitManager = new GitManager(configuration)
         }
 
-        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
-            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+        ExecutionContext context = new ExecutionContextImpl.Builder()
+            .framework(this.framework)
+            .storageTree(services.getService(KeyStorageTree.class))
+            .build();
+
+
+        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)){
+            def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE), context)
+            gitManager.setGitPassword(password)
         }
+
+        // if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
+        //     gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+        // }
 
         if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {
             gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE))
