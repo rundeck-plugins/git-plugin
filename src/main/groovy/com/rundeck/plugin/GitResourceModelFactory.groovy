@@ -12,6 +12,7 @@ import com.dtolabs.rundeck.plugins.ServiceNameConstants
 import com.dtolabs.rundeck.plugins.descriptions.PluginDescription
 import com.dtolabs.rundeck.plugins.util.DescriptionBuilder
 import com.rundeck.plugin.util.GitPluginUtil
+import org.rundeck.app.spi.Services;
 
 /**
  * Created by luistoledo on 12/18/17.
@@ -42,7 +43,7 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
 
 
     final static Map<String, Object> renderingOptionsAuthentication = GitPluginUtil.getRenderOpt("Authentication",false)
-    final static Map<String, Object> renderingOptionsAuthenticationPassword = GitPluginUtil.getRenderOpt("Authentication",false, true)
+    final static Map<String, Object> renderingOptionsAuthenticationPassword = GitPluginUtil.getRenderOpt("Authentication",false, false, true)
     final static Map<String, Object> renderingOptionsConfig = GitPluginUtil.getRenderOpt("Configuration",false)
 
     GitResourceModelFactory(Framework framework) {
@@ -76,7 +77,7 @@ Some examples:
             .property(PropertyUtil.bool(WRITABLE, "Writable",
             "Allow to write the remote file.",
             false,"false",null,renderingOptionsConfig))
-            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password", 'Password to authenticate remotely', false,
+             .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password", 'Password to authenticate remotely', false,
             null,null,null, renderingOptionsAuthenticationPassword))
             .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,
@@ -95,6 +96,13 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
     @Override
     ResourceModelSource createResourceModelSource(Properties configuration) throws ConfigurationException {
         final GitResourceModel resource = new GitResourceModel(configuration,framework)
+
+        return resource
+    }
+
+     @Override
+    ResourceModelSource createResourceModelSource(final Services services, final Properties configuration) throws ConfigurationException {
+        final GitResourceModel resource = new GitResourceModel(services, configuration,framework)
 
         return resource
     }
