@@ -3,6 +3,9 @@ package com.rundeck.plugin.util
 import com.dtolabs.rundeck.core.plugins.configuration.StringRenderingConstants
 import com.dtolabs.rundeck.core.storage.ResourceMeta
 import com.dtolabs.rundeck.plugins.step.PluginStepContext
+import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
+import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree;
+import com.dtolabs.rundeck.core.execution.ExecutionListener
 
 /**
  * Created by luistoledo on 12/18/17.
@@ -41,4 +44,21 @@ class GitPluginUtil {
 
     }
 
+     static String getFromKeyStorage(String path, ExecutionContextImpl context){
+        KeyStorageTree storageTree = context.getStorageTree();
+
+        if (storageTree!=null){
+            ResourceMeta contents = context.getStorageTree().getResource(path).getContents();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            contents.writeContent(byteArrayOutputStream);
+            String password = new String(byteArrayOutputStream.toByteArray());
+
+            return password;
+        } else {
+            ExecutionListener logger = context.getExecutionContext().getExecutionListener()
+            logger.log(1, "storageTree is null. Cannot retrieve password");
+            return null
+        }
+
+    }
 }
