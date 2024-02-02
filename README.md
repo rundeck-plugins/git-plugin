@@ -60,7 +60,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 ### Limitations
 
 * The plugin needs to clone the full repo on the local directory path (Base Directory option) to get the file that will be added to the resource model.
-* Any time that you edit the nodes on the GUI, the commit will be perfomed with the message `Edit node from GUI`  (it is not editable)
+* Any time that you edit the nodes on the GUI, the commit will be performed with the message `Edit node from GUI`  (it is not editable)
 
 ## Workflow Steps
 
@@ -78,13 +78,13 @@ This plugin can clone/pull, add, commit, and push a git repository via 4 Workflo
     * `ssh://[user@]host.xz[:port]/path/to/repo.git/`
     * `git://host.xz[:port]/path/to/repo.git/`
     * `http[s]://host.xz[:port]/path/to/repo.git/`
+    * `https[s]://user@github.com/account/repo.git`
     * `ftp[s]://host.xz[:port]/path/to/repo.git/`
     * `rsync://host.xz/path/to/repo.git/`
 
-
 ##### Authentication
 
-* **Password Storage Path**: Password storage path to authenticate remotely
+* **Password Storage Path**: Password storage path to authenticate remotely. This can be an Access Token - such as a Github access token.
 * **SSH: Strict Host Key Checking**: Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
 * **SSH Key Storage Path**: SSH Key storage path to authenticate

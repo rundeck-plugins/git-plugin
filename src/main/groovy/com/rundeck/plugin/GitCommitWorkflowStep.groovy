@@ -54,14 +54,14 @@ class GitCommitWorkflowStep implements StepPlugin, Describable{
             PropertyUtil.string(GIT_BASE_DIRECTORY, "Base Directory", "Directory to commit.", true,
                                 null, null, null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_URL, "Git URL", '''Checkout url.
-                                                        See [git-commit](https://www.kernel.org/pub/software/scm/git/docs/git-commit.html)
-                                                        specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-push.html#URLS) section.
-                                                        Some examples:
-                                                        * `ssh://[user@]host.xz[:port]/path/to/repo.git/`
-                                                        * `git://host.xz[:port]/path/to/repo.git/`
-                                                        * `http[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `ftp[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `rsync://host.xz/path/to/repo.git/`''', true,
+See [git-commit](https://www.kernel.org/pub/software/scm/git/docs/git-commit.html)
+specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-push.html#URLS) section.
+Some examples:
+* `ssh://[user@]host.xz[:port]/path/to/repo.git/`
+* `git://host.xz[:port]/path/to/repo.git/`
+* `http[s]://host.xz[:port]/path/to/repo.git/`
+* `ftp[s]://host.xz[:port]/path/to/repo.git/`
+* `rsync://host.xz/path/to/repo.git/`''', true,
                                                                                      null,null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_MESSAGE, "Message", "Commit Message.", true,
                                                                                      "Rundeck Commit",null,null, renderingOptionsConfig))

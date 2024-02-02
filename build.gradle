@@ -1,5 +1,5 @@
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.15.4'
+    id 'pl.allegro.tech.build.axion-release' version '1.16.1'
 }
 
 group 'com.rundeck'
@@ -36,12 +36,12 @@ configurations {
 
 dependencies {
     implementation 'org.codehaus.groovy:groovy-all:3.0.9'
-    testImplementation group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
 
-    implementation group: 'org.rundeck', name: 'rundeck-core', version: '4.15.0-20230725'
+    implementation group: 'org.rundeck', name: 'rundeck-core', version: '5.1.0-rc2-20240124'
     implementation 'org.slf4j:slf4j-api:1.7.30'
 
-    pluginLibs( 'org.eclipse.jgit:org.eclipse.jgit:5.13.2.202306221912-r') {
+    pluginLibs('org.eclipse.jgit:org.eclipse.jgit:6.6.1.202309021850-r') {
         exclude module: 'slf4j-api'
         exclude module: 'jsch'
         exclude module: 'commons-logging'

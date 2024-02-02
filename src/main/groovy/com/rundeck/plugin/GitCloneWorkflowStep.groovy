@@ -52,14 +52,14 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
             PropertyUtil.string(GIT_BASE_DIRECTORY, "Base Directory", "Directory for checkout.", true,
                                 null, null, null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_URL, "Git URL", '''Checkout url.
-                                                        See [git-clone](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html)
-                                                        specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html#URLS) section.
-                                                        Some examples:
-                                                        * `ssh://[user@]host.xz[:port]/path/to/repo.git/`
-                                                        * `git://host.xz[:port]/path/to/repo.git/`
-                                                        * `http[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `ftp[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `rsync://host.xz/path/to/repo.git/`''', true,
+See [git-clone](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html)
+specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-clone.html#URLS) section.
+Some examples:
+* `ssh://[user@]host.xz[:port]/path/to/repo.git/`
+* `git://host.xz[:port]/path/to/repo.git/`
+* `http[s]://host.xz[:port]/path/to/repo.git/`
+* `ftp[s]://host.xz[:port]/path/to/repo.git/`
+* `rsync://host.xz/path/to/repo.git/`''', true,
                                                                                      null,null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_BRANCH, "Branch", "Checkout branch.", true,
                                                                                      "master",null,null, renderingOptionsConfig))
@@ -139,7 +139,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
         }catch(Exception e){
             logger.log(0, e.getMessage())
-            throw new StepException("Error ${op} VM.", GitFailureReason.AuthenticationError)
+            throw new StepException("Error with Authentication ${e.getMessage()}", GitFailureReason.AuthenticationError)
 
         }
 
