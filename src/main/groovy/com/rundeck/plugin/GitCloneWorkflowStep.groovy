@@ -139,7 +139,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
         }catch(Exception e){
             logger.log(0, e.getMessage())
-            throw new StepException("Error ${op} VM.", GitFailureReason.AuthenticationError)
+            throw new StepException("Error with Authentication ${e.getMessage()}", GitFailureReason.AuthenticationError)
 
         }
 
