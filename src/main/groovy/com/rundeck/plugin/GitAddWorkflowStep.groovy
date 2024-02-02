@@ -43,7 +43,7 @@ class GitAddWorkflowStep implements StepPlugin, Describable{
             PropertyUtil.string(GIT_BASE_DIRECTORY, "Base Directory", "Directory to add to.", true,
                                 null, null, null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_ADD_FILE_PATTERN, "File Pattern", '''File Pattern of files to be added.
-                                                       See [addFilepattern](http://archive.eclipse.org/jgit/docs/jgit-2.0.0.201206130900-r/apidocs/org/eclipse/jgit/api/AddCommand.html#addFilepattern(java.lang.String)) for more details.''', true,
+See [addFilepattern](http://archive.eclipse.org/jgit/docs/jgit-2.0.0.201206130900-r/apidocs/org/eclipse/jgit/api/AddCommand.html#addFilepattern(java.lang.String)) for more details.''', true,
                                                                                      ".",null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.bool(GIT_LOG_DISABLE, "Disable log output", "Enabling this flag, the plugin will not show the output log", true,
                                                                                      "false",null, renderingOptionsConfig))
