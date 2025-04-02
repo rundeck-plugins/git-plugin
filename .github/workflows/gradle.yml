@@ -34,7 +34,7 @@ jobs:
             ~/.gradle/wrapper
             .gradle
             build/assets
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', '.gradle/dependency-locks/*') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
             
@@ -64,5 +64,5 @@ jobs:
         with:
           name: git-plugin-${{ steps.get_version.outputs.VERSION }}
           path: |
-            build/distributions/git-plugin-${{ steps.get_version.outputs.VERSION }}.zip
+            build/distributions/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
           if-no-files-found: error
