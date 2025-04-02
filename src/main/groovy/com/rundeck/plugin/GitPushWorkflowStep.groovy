@@ -51,14 +51,14 @@ class GitPushWorkflowStep implements StepPlugin, Describable{
             PropertyUtil.string(GIT_BASE_DIRECTORY, "Base Directory", "Directory to push.", true,
                                 null, null, null, renderingOptionsConfig))
                                                        .property(PropertyUtil.string(GIT_URL, "Git URL", '''Checkout url.
-                                                        See [git-push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html)
-                                                        specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-push.html#URLS) section.
-                                                        Some examples:
-                                                        * `ssh://[user@]host.xz[:port]/path/to/repo.git/`
-                                                        * `git://host.xz[:port]/path/to/repo.git/`
-                                                        * `http[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `ftp[s]://host.xz[:port]/path/to/repo.git/`
-                                                        * `rsync://host.xz/path/to/repo.git/`''', true,
+See [git-push](https://www.kernel.org/pub/software/scm/git/docs/git-push.html)
+specifically the [GIT URLS](https://www.kernel.org/pub/software/scm/git/docs/git-push.html#URLS) section.
+Some examples:
+* `ssh://[user@]host.xz[:port]/path/to/repo.git/`
+* `git://host.xz[:port]/path/to/repo.git/`
+* `http[s]://host.xz[:port]/path/to/repo.git/`
+* `ftp[s]://host.xz[:port]/path/to/repo.git/`
+* `rsync://host.xz/path/to/repo.git/`''', true,
                                                                                      null,null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.bool(GIT_LOG_DISABLE, "Disable log output", "Enabling this flag, the plugin will not show the output log", true,
                                                                                      "false",null, renderingOptionsConfig))
