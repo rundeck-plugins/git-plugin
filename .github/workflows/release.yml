@@ -55,6 +55,6 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            build/distributions/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
+            build/libs/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

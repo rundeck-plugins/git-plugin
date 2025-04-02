@@ -64,5 +64,5 @@ jobs:
         with:
           name: git-plugin-${{ steps.get_version.outputs.VERSION }}
           path: |
-            build/distributions/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
+            build/libs/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
           if-no-files-found: error
