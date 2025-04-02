@@ -1,8 +1,8 @@
 # Git Plugin
 
-This is a git plugin (based on [Jgit](https://www.eclipse.org/jgit/)) which contain a Resource model and worflow steps
+This is a git plugin (based on [Jgit](https://www.eclipse.org/jgit/)) which contains a Resource model and workflow steps.
 
-For authentication, it can be used a private key or a password.
+For authentication, it can be use a private key or a password.
 If the private key is not defined, then the password will be used. 
 
 * The primary key will work with SSH protocol on the Git URL. 
