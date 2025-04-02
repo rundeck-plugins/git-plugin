@@ -1,47 +1,60 @@
+name: Create Release
+
 on:
   push:
-    # Sequence of patterns matched against refs/tags
     tags:
-      - '*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
-name: Upload Release Asset
+      - '*'
 
 jobs:
-  build:
-    name: Upload Release Asset
+  release:
+    name: Create Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: set up JDK 1.8
-        uses: actions/setup-java@v1
+          
+      - name: Set up JDK 11  
+        uses: actions/setup-java@v3  
         with:
-          java-version: 1.8
-      - name: Build with Gradle
-        run: ./gradlew build
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+          
+      - name: Cache Gradle and Assets
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            .gradle
+            build/assets
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+            
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        
+      - name: Build Release
+        run: ./gradlew clean assetCompile build --info
+        
       - name: Get Release Version
         id: get_version
-        run: VERSION=$(./gradlew currentVersion -q -Prelease.quiet) && echo ::set-output name=VERSION::$VERSION
+        run: |
+          VERSION=$(./gradlew currentVersion -q -Prelease.quiet | tail -n 1)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Detected version: ${VERSION}"
+          
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1  
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ steps.get_version.outputs.VERSION }}
+          name: Release ${{ steps.get_version.outputs.VERSION }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset (jar)
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+          files: |
+            build/distributions/git-plugin-${{ steps.get_version.outputs.VERSION }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: build/libs/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
-          asset_name: git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
-          asset_content_type: application/octet-stream
-
