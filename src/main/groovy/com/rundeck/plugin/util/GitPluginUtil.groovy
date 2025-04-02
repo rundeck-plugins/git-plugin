@@ -6,10 +6,12 @@ import com.dtolabs.rundeck.plugins.step.PluginStepContext
 import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
 import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree;
 import com.dtolabs.rundeck.core.execution.ExecutionListener
+import groovy.transform.CompileStatic
 
 /**
  * Created by luistoledo on 12/18/17.
  */
+@CompileStatic
 class GitPluginUtil {
     static Map<String, Object> getRenderOpt(String value, boolean secondary, boolean password = false, boolean storagePassword = false, boolean storageKey = false) {
         Map<String, Object> ret = new HashMap<>();
@@ -45,7 +47,7 @@ class GitPluginUtil {
     }
 
      static String getFromKeyStorage(String path, ExecutionContextImpl context){
-        KeyStorageTree storageTree = context.getStorageTree();
+        KeyStorageTree storageTree = (KeyStorageTree)context.getStorageTree()
 
         if (storageTree!=null){
             ResourceMeta contents = context.getStorageTree().getResource(path).getContents();
@@ -55,7 +57,7 @@ class GitPluginUtil {
 
             return password;
         } else {
-            ExecutionListener logger = context.getExecutionContext().getExecutionListener()
+            ExecutionListener logger = context.getExecutionListener()
             logger.log(1, "storageTree is null. Cannot retrieve password");
             return null
         }

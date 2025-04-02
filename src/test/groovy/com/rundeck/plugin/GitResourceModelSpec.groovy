@@ -4,7 +4,11 @@ import com.dtolabs.rundeck.core.common.Framework
 import com.dtolabs.rundeck.core.common.INodeSet
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParser
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParserService
+import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree
+import org.rundeck.app.spi.Services
+import org.rundeck.storage.api.Resource
 import spock.lang.Specification
+import com.dtolabs.rundeck.core.storage.ResourceMeta
 
 /**
  * Created by luistoledo on 12/22/17.
@@ -158,6 +162,63 @@ class GitResourceModelSpec  extends Specification{
         'resources' |'resources.xml'     | 'xml'
         'resources' |'resources.yaml'    | 'yaml'
         'resources' |'resources.json'    | 'json'
+    }
+
+    def "retrieve resource success using password authentication from key storage"() {
+        given:
+
+        def nodeSet = Mock(INodeSet)
+        def framework = getFramework(nodeSet)
+
+
+
+        String path = "resources"
+        String fileName = "resources.xml"
+        String format = "xml"
+
+        File folder = new File(path)
+        if(!folder.exists()){
+            folder.mkdir()
+        }
+
+        Properties configuration = [
+                gitBaseDirectory:path,
+                gitFormatFile:format,
+                gitFile:fileName,
+                gitPasswordPathStorage:"gitPassword",
+        ]
+
+        def gitManager = Mock(GitManager)
+
+        def inputStream = GroovyMock(InputStream)
+        KeyStorageTree keyStorageTree = Mock(KeyStorageTree){
+            1 * getResource(_) >> Mock(Resource) {
+                1* getContents() >> Mock(ResourceMeta) {
+                    writeContent(_) >> { args ->
+                        args[0].write('password'.bytes)
+                        return 6L
+                    }
+                }
+            }
+        }
+
+        Services services = Mock(Services){
+            1 * getService(KeyStorageTree) >> keyStorageTree
+        }
+
+        when:
+
+        def resource = new GitResourceModel(services,configuration,framework)
+        resource.setGitManager(gitManager)
+
+        def result = resource.getNodes()
+
+        then:
+        1 * gitManager.getFile(path) >> inputStream
+        result == nodeSet
+
+
+
     }
 
 
