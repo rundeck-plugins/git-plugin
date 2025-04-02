@@ -1,13 +1,22 @@
 plugins {
-    id 'pl.allegro.tech.build.axion-release' version '1.16.1'
+    alias(libs.plugins.axionRelease)
+    alias(libs.plugins.nexusPublish)
+    id 'java'
 }
 
 group 'com.rundeck'
 
 ext.rundeckPluginVersion = '1.2'
+ext.publishName = "Git Plugin ${project.version}"
+ext.githubSlug = 'rundeck-plugins/git-plugin'
 ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep,com.rundeck.plugin.GitPushWorkflowStep,com.rundeck.plugin.GitCommitWorkflowStep,com.rundeck.plugin.GitAddWorkflowStep'
 ext.pluginName = 'Git Plugin'
 ext.pluginDescription = 'This is a git plugin (based on Jgit) which contain a Resource model and worflow steps'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 scmVersion {
     ignoreUncommittedChanges = true
@@ -35,27 +44,23 @@ configurations {
 
 
 dependencies {
-    implementation 'org.codehaus.groovy:groovy-all:3.0.9'
-    testImplementation group: 'junit', name: 'junit', version: '4.13.1'
+    // Use catalog aliases for dependencies
+    implementation(libs.groovyAll)
+    implementation(libs.rundeckCore)
+    implementation(libs.slf4jApi)
 
-    implementation group: 'org.rundeck', name: 'rundeck-core', version: '5.1.0-rc2-20240124'
-    implementation 'org.slf4j:slf4j-api:1.7.30'
-
-    pluginLibs('org.eclipse.jgit:org.eclipse.jgit:6.6.1.202309021850-r') {
+    pluginLibs(libs.jgit) {
         exclude module: 'slf4j-api'
         exclude module: 'jsch'
         exclude module: 'commons-logging'
     }
 
-    pluginLibs ("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:5.13.2.202306221912-r"){
+    pluginLibs(libs.jgitSsh) {
         exclude module: 'slf4j-api'
         exclude group: 'org.bouncycastle'
     }
 
-    testImplementation "org.codehaus.groovy:groovy-all:3.0.9"
-    testImplementation "org.spockframework:spock-core:2.0-groovy-3.0"
-    testImplementation "cglib:cglib-nodep:2.2.2"
-    testImplementation 'org.objenesis:objenesis:1.4'
+    testImplementation libs.bundles.testLibs
 }
 
 
@@ -84,3 +89,15 @@ jar {
     }
     dependsOn(copyToLib)
 }
+
+nexusPublishing {
+    packageGroup = 'org.rundeck-plugins'
+    repositories {
+        sonatype{
+            stagingProfileId = '67d196ce5bae'
+        }
+    }
+}
+
+
+apply from: "${rootDir}/gradle/publishing.gradle"
