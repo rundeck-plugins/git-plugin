@@ -43,7 +43,7 @@ jobs:
         
       - name: Build Plugin
         run: |
-          ./gradlew clean assetCompile build --info
+          ./gradlew clean build --info
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
           

@@ -38,7 +38,7 @@ jobs:
         run: chmod +x gradlew
         
       - name: Build Release
-        run: ./gradlew clean assetCompile build --info
+        run: ./gradlew clean build --info
         
       - name: Get Release Version
         id: get_version
