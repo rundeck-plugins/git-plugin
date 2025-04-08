@@ -97,7 +97,7 @@ jar {
 }
 
 nexusPublishing {
-    packageGroup = 'org.rundeck-plugins'
+    packageGroup = 'org.rundeck.plugins'
     repositories {
         sonatype()
     }
