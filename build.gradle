@@ -30,6 +30,7 @@ scmVersion {
         prefix = ''
         versionSeparator = ''
     }
+    versionCreator("simple")
 }
 project.version = scmVersion.version
 

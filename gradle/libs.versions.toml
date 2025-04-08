@@ -1,6 +1,6 @@
 [versions]
 # Plugins
-axionRelease = "1.18.14"
+axionRelease = "1.18.18"
 # Libraries
 groovy = "3.0.22"
 junit = "4.13.2"
