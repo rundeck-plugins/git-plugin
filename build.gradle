@@ -12,10 +12,16 @@ ext.githubSlug = 'rundeck-plugins/git-plugin'
 ext.pluginClassNames='com.rundeck.plugin.GitResourceModelFactory,com.rundeck.plugin.GitCloneWorkflowStep,com.rundeck.plugin.GitPushWorkflowStep,com.rundeck.plugin.GitCommitWorkflowStep,com.rundeck.plugin.GitAddWorkflowStep'
 ext.pluginName = 'Git Plugin'
 ext.pluginDescription = 'This is a git plugin (based on Jgit) which contain a Resource model and worflow steps'
+ext.developers = [
+        [id: 'ltamaster', name: 'Luis Toledo', email: 'luis@variacode.com']
+]
+
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+    withJavadocJar()
+    withSourcesJar()
 }
 
 scmVersion {
@@ -93,11 +99,12 @@ jar {
 nexusPublishing {
     packageGroup = 'org.rundeck-plugins'
     repositories {
-        sonatype{
-            stagingProfileId = '67d196ce5bae'
-        }
+        sonatype()
     }
 }
 
+test {
+    useJUnitPlatform()
+}
 
 apply from: "${rootDir}/gradle/publishing.gradle"
