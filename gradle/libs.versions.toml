@@ -1,0 +1,32 @@
+[versions]
+# Plugins
+axionRelease = "1.18.18"
+# Libraries
+groovy = "3.0.22"
+junit = "4.13.2"
+rundeckCore = "5.10.0-20250312"
+slf4j = "1.7.36"
+jgit = "6.6.1.202309021850-r"
+jgitSsh = "5.13.3.202401111512-r"
+spock = "2.0-groovy-3.0"
+cglib = "3.3.0"
+objenesis = "1.4"
+nexusPublish = "1.3.0"
+
+[libraries]
+groovyAll   = { group = "org.codehaus.groovy", name = "groovy-all", version.ref = "groovy" }
+junit       = { group = "junit", name = "junit", version.ref = "junit" }
+rundeckCore = { group = "org.rundeck", name = "rundeck-core", version.ref = "rundeckCore" }
+slf4jApi    = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+jgit        = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }
+jgitSsh     = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.jsch", version.ref = "jgitSsh" }
+spockCore   = { group = "org.spockframework", name = "spock-core", version.ref = "spock" }
+cglibNodep  = { group = "cglib", name = "cglib-nodep", version.ref = "cglib" }
+objenesis   = { group = "org.objenesis", name = "objenesis", version.ref = "objenesis" }
+
+[bundles]
+testLibs = ["junit", "groovyAll", "spockCore", "cglibNodep", "objenesis"]
+
+[plugins]
+axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axionRelease" }
+nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }

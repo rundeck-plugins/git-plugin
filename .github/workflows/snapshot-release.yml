@@ -1,10 +1,11 @@
 on:
   push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+' # Push events to matching v*, i.e. v1.0, v20.15.10
+    branches:
+      - master # Trigger on commits to the master branch
+    tags-ignore:
+      - '*' # Exclude all pushes that are tags
 
-name: Upload Release Asset
+name: Snapshot Release
 
 jobs:
   build:
@@ -26,16 +27,6 @@ jobs:
       - name: Get Release Version
         id: get_version
         run: VERSION=$(./gradlew currentVersion -q -Prelease.quiet) && echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-      - name: Create Release
-        id: create_release
-        run: |
-          gh release create \
-            --generate-notes \
-            --title 'Release ${{ steps.get_version.outputs.VERSION }}' \
-            ${{ github.ref_name }} \
-            build/libs/git-plugin-${{ steps.get_version.outputs.VERSION }}.jar
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish to Maven Central
         run: ./gradlew -PsigningKey=${SIGNING_KEY_B64} -PsigningPassword=${SIGNING_PASSWORD} -PsonatypeUsername=${SONATYPE_USERNAME} -PsonatypePassword=${SONATYPE_PASSWORD} publishToSonatype closeAndReleaseSonatypeStagingRepository
         env:
