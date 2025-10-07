@@ -55,6 +55,9 @@ dependencies {
     implementation(libs.groovyAll)
     implementation(libs.rundeckCore)
     implementation(libs.slf4jApi)
+    
+    // Add secure commons-lang3 to provide alternative to vulnerable commons-lang 2.6
+    implementation(libs.commonsLang3)
 
     pluginLibs(libs.jgit) {
         exclude module: 'slf4j-api'
@@ -68,6 +71,21 @@ dependencies {
     }
 
     testImplementation libs.bundles.testLibs
+}
+
+configurations.all {
+    resolutionStrategy {
+        // Force secure versions for non-breaking dependency overrides
+        force "com.squareup.okhttp3:okhttp:${libs.versions.okhttp3.get()}"
+        force "com.squareup.okio:okio:${libs.versions.okio.get()}"
+        
+        // Replace vulnerable commons-lang with secure commons-lang3
+        dependencySubstitution {
+            substitute module('commons-lang:commons-lang') using module("org.apache.commons:commons-lang3:${libs.versions.commonsLang3.get()}")
+        }
+        
+        // Note: JGit vulnerabilities left as-is to avoid code breaking changes
+    }
 }
 
 
