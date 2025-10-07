@@ -17,6 +17,8 @@ Run the following command to built the jar file:
 ./gradlew clean build
 ```
 
+**Note:** This plugin requires Rundeck 5.16.0 or later.
+
 ## Install
 
 Copy the `git-plugin-x.y.x.jar` file to the `$RDECK_BASE/libext/` directory inside your Rundeck installation.
