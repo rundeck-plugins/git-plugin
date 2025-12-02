@@ -191,7 +191,7 @@ class GitResourceModelSpec  extends Specification{
         def inputStream = GroovyMock(InputStream)
         KeyStorageTree keyStorageTree = Mock(KeyStorageTree){
             1 * getResource(_) >> Mock(Resource) {
-                1* getContents() >> Mock(ResourceMeta) {
+                1 * getContents() >> Mock(ResourceMeta) {
                     writeContent(_) >> { args ->
                         args[0].write('password'.bytes)
                         return 6L
@@ -243,7 +243,7 @@ class GitResourceModelSpec  extends Specification{
         def inputStream = GroovyMock(InputStream)
         KeyStorageTree keyStorageTree = Mock(KeyStorageTree){
             1 * getResource(_) >> Mock(Resource) {
-                1* getContents() >> Mock(ResourceMeta) {
+                1 * getContents() >> Mock(ResourceMeta) {
                     writeContent(_) >> { args ->
                         args[0].write('-----BEGIN RSA PRIVATE KEY-----\ntest key content\n-----END RSA PRIVATE KEY-----'.bytes)
                         return 65L

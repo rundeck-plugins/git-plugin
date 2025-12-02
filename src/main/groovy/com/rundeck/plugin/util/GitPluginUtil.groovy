@@ -3,8 +3,8 @@ package com.rundeck.plugin.util
 import com.dtolabs.rundeck.core.plugins.configuration.StringRenderingConstants
 import com.dtolabs.rundeck.core.storage.ResourceMeta
 import com.dtolabs.rundeck.plugins.step.PluginStepContext
-import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
-import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree;
+import com.dtolabs.rundeck.core.execution.ExecutionContext
+import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree
 import com.dtolabs.rundeck.core.execution.ExecutionListener
 import groovy.transform.CompileStatic
 import java.nio.charset.StandardCharsets
@@ -77,7 +77,7 @@ class GitPluginUtil {
      * @param context the Rundeck execution context
      * @return the contents of the resource as a String, or null if the storage tree is null or an error occurs
      */
-    static String getFromKeyStorage(String path, ExecutionContextImpl context){
+    static String getFromKeyStorage(String path, ExecutionContext context){
         KeyStorageTree storageTree = (KeyStorageTree)context.getStorageTree()
 
         if (storageTree == null){

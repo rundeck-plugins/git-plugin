@@ -105,7 +105,7 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
         return new GitResourceModel(configuration,framework)
     }
 
-     @Override
+    @Override
     ResourceModelSource createResourceModelSource(final Services services, final Properties configuration) throws ConfigurationException {
         return new GitResourceModel(services, configuration,framework)
     }

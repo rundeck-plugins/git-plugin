@@ -64,31 +64,30 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_PATH))
         }
 
-        // Key Storage password (more secure, takes precedence if both are set)
-        if(services && configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)){
-            ExecutionContext context = new ExecutionContextImpl.Builder()
+        // SSH Key from filesystem path (checked first)
+        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH)) {
+            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH))
+        }
+
+        // Create execution context once for Key Storage operations
+        ExecutionContext context = null
+        if (services) {
+            context = new ExecutionContextImpl.Builder()
                     .framework(framework)
                     .storageTree(services.getService(KeyStorageTree.class))
-                    .build();
+                    .build()
+        }
 
+        // Key Storage password (more secure, takes precedence if both are set)
+        if(context && configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)){
             def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH), context)
             if (password != null) {
                 gitManager.setGitPassword(password)
             }
         }
 
-        // SSH Key from filesystem path (checked first)
-        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH)) {
-            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH))
-        }
-
         // SSH Key from Key Storage (takes precedence if both are set)
-        if(services && configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)){
-            ExecutionContext context = new ExecutionContextImpl.Builder()
-                    .framework(framework)
-                    .storageTree(services.getService(KeyStorageTree.class))
-                    .build();
-
+        if(context && configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)){
             def sshKey = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH), context)
             if (sshKey != null) {
                 gitManager.setSshPrivateKey(sshKey)
