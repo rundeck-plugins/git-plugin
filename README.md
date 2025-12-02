@@ -264,8 +264,8 @@ You need to set up following additional options to use the plugin:
 ##### Repo Settings
 
 * **Message**: Commit message to be used. Defaults to `Rundeck Commit`
-* **Add**: Adds all contents of the git repo before commiting. Defaults to `False`. If you need to be more specific, please use `GIT / Add` workflow step.
-* **Push**: Pushes the repository after commiting the changes. Defaults to `False`.
+* **Add**: Adds all contents of the git repo before committing. Defaults to `False`. If you need to be more specific, please use `GIT / Add` workflow step.
+* **Push**: Pushes the repository after committing the changes. Defaults to `False`.
 
 ---
 

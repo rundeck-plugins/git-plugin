@@ -37,9 +37,9 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
     public final static String GIT_FORMAT_FILE="gitFormatFile"
     public final static String GIT_BRANCH="gitBranch"
     public final static String GIT_HOSTKEY_CHECKING="strictHostKeyChecking"
-    public final static String GIT_KEY_STORAGE="gitKeyPath"
+    public final static String GIT_KEY_PATH="gitKeyPath"
     public final static String GIT_KEY_STORAGE_PATH="gitKeyPathStorage"
-    public final static String GIT_PASSWORD_STORAGE="gitPasswordPath"
+    public final static String GIT_PASSWORD_PATH="gitPasswordPath"
     public final static String GIT_PASSWORD_STORAGE_PATH="gitPasswordPathStorage"
 
     public static final String WRITABLE="writable";
@@ -82,14 +82,14 @@ Some examples:
             .property(PropertyUtil.bool(WRITABLE, "Writable",
             "Allow to write the remote file.",
             false,"false",null,renderingOptionsConfig))
-            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password (Plain Text)", 'Password to authenticate remotely (plain text)', false,
+            .property(PropertyUtil.string(GIT_PASSWORD_PATH, "Git Password (Plain Text)", 'Password to authenticate remotely (plain text)', false,
             null,null,null, renderingOptionsAuthenticationPassword))
             .property(PropertyUtil.string(GIT_PASSWORD_STORAGE_PATH, "Git Password Storage Path", 'Key storage path for Git password to authenticate remotely', false,
                     null,null,null, renderingOptionsAuthenticationPasswordStorage))
             .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,
             "yes", LIST_HOSTKEY_CHECKING,null, renderingOptionsAuthentication))
-            .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path (Filesystem)", 'SSH Key Path from filesystem', false,
+            .property(PropertyUtil.string(GIT_KEY_PATH, "SSH Key Path (Filesystem)", 'SSH Key Path from filesystem', false,
             null,null,null, renderingOptionsAuthentication))
             .property(PropertyUtil.string(GIT_KEY_STORAGE_PATH, "SSH Key Storage Path", 'SSH Key storage path from Rundeck Key Storage', false,
             null,null,null, renderingOptionsAuthenticationKeyStorage))

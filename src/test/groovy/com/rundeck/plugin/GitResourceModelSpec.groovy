@@ -268,7 +268,6 @@ class GitResourceModelSpec  extends Specification{
         result == nodeSet
     }
 
-
     private Framework getFramework(INodeSet nodeSet){
         def resourceFormatParser = Mock(ResourceFormatParser){
             parseDocument(_) >> nodeSet

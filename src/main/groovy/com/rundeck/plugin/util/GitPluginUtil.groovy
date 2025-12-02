@@ -54,6 +54,14 @@ class GitPluginUtil {
         }
     }
 
+    /**
+     * Retrieves the contents of a resource from the key storage using the provided path and plugin step context.
+     * 
+     * @param path    the path to the resource in the key storage
+     * @param context the Rundeck plugin step context
+     * @return the contents of the resource as a String
+     * @throws Exception if the resource cannot be found or an error occurs reading the contents
+     */
     static String getFromKeyStorage(String path, PluginStepContext context){
         ResourceMeta contents = context.getExecutionContext().getStorageTree().getResource(path).getContents();
         return readResourceMetaAsString(contents);
@@ -74,7 +82,9 @@ class GitPluginUtil {
 
         if (storageTree == null){
             ExecutionListener logger = context.getExecutionListener()
-            logger.log(1, "storageTree is null. Cannot retrieve password from Key Storage.");
+            if (logger != null) {
+                logger.log(1, "storageTree is null. Cannot retrieve credential from Key Storage.");
+            }
             return null
         }
 
@@ -83,7 +93,9 @@ class GitPluginUtil {
             return readResourceMetaAsString(contents);
         } catch (Exception e) {
             ExecutionListener logger = context.getExecutionListener()
-            logger.log(1, "Failed to retrieve password from Key Storage at path '${path}': ${e.message}");
+            if (logger != null) {
+                logger.log(1, "Failed to retrieve credential from Key Storage at path '${path}': ${e.message}");
+            }
             return null
         }
     }

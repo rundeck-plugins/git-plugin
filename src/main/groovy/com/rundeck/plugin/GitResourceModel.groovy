@@ -60,8 +60,8 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
 
         // Plain text password (less secure, checked first)
         // Support old property name for backwards compatibility
-        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
-            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_PATH)) {
+            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_PATH))
         }
 
         // Key Storage password (more secure, takes precedence if both are set)
@@ -78,8 +78,8 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
         }
 
         // SSH Key from filesystem path (checked first)
-        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {
-            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE))
+        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH)) {
+            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH))
         }
 
         // SSH Key from Key Storage (takes precedence if both are set)
