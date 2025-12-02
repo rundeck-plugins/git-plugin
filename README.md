@@ -54,10 +54,22 @@ You need to set up the following options to use the plugin:
 
 ### Authentication
 
-* **Git Password**: Password to authenticate remotely
+The plugin supports multiple authentication methods:
+
+#### Password Authentication
+* **Git Password (Plain Text)**: Password to authenticate remotely (plain text - less secure)
+* **Git Password Storage Path**: Key storage path for Git password (more secure - recommended)
+
+If both password fields are configured, the Key Storage path takes precedence for security.
+
+#### SSH Key Authentication
 * **SSH: Strict Host Key Checking**: Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
 * **SSH Key Path**: SSH Key Path to authenticate
+
+**Recommended:** Use Key Storage for passwords instead of plain text. To use Key Storage:
+1. Store your password in Rundeck Key Storage (under `keys/` path)
+2. Select the password path using the Key Storage browser in the plugin configuration
 
 ### Limitations
 

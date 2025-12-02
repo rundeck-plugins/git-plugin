@@ -7,6 +7,7 @@ import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
 import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree;
 import com.dtolabs.rundeck.core.execution.ExecutionListener
 import groovy.transform.CompileStatic
+import java.nio.charset.StandardCharsets
 
 /**
  * Created by luistoledo on 12/18/17.
@@ -40,27 +41,45 @@ class GitPluginUtil {
         ResourceMeta contents = context.getExecutionContext().getStorageTree().getResource(path).getContents();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         contents.writeContent(byteArrayOutputStream);
-        String password = new String(byteArrayOutputStream.toByteArray());
+        String password = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
 
         return password;
 
     }
 
-     static String getFromKeyStorage(String path, ExecutionContextImpl context){
+    /**
+     * Retrieves the contents of a resource from the key storage using the provided path and execution context.
+     * <p>
+     * If the storage tree is available, this method attempts to read the resource at the given path and
+     * returns its contents as a String. If the storage tree is null or an error occurs, it logs a message and returns null.
+     *
+     * @param path    the path to the resource in the key storage
+     * @param context the Rundeck execution context
+     * @return the contents of the resource as a String, or null if the storage tree is null or an error occurs
+     */
+    static String getFromKeyStorage(String path, ExecutionContextImpl context){
         KeyStorageTree storageTree = (KeyStorageTree)context.getStorageTree()
 
-        if (storageTree!=null){
-            ResourceMeta contents = context.getStorageTree().getResource(path).getContents();
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            contents.writeContent(byteArrayOutputStream);
-            String password = new String(byteArrayOutputStream.toByteArray());
-
-            return password;
-        } else {
+        if (storageTree == null){
             ExecutionListener logger = context.getExecutionListener()
-            logger.log(1, "storageTree is null. Cannot retrieve password");
+            logger.log(1, "storageTree is null. Cannot retrieve password from Key Storage.");
             return null
         }
 
+        try {
+            ResourceMeta contents = storageTree.getResource(path).getContents();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            try {
+                contents.writeContent(byteArrayOutputStream);
+                String password = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+                return password;
+            } finally {
+                byteArrayOutputStream.close();
+            }
+        } catch (Exception e) {
+            ExecutionListener logger = context.getExecutionListener()
+            logger.log(1, "Failed to retrieve password from Key Storage at path '${path}': ${e.message}");
+            return null
+        }
     }
 }

@@ -80,9 +80,9 @@ Some examples:
             .property(PropertyUtil.bool(WRITABLE, "Writable",
             "Allow to write the remote file.",
             false,"false",null,renderingOptionsConfig))
-            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password", 'Password to authenticate remotely', false,
+            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password (Plain Text)", 'Password to authenticate remotely (plain text)', false,
             null,null,null, renderingOptionsAuthenticationPassword))
-            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE_PATH, "Git Password", 'Password Storage to authenticate remotely', false,
+            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE_PATH, "Git Password Storage Path", 'Key storage path for Git password to authenticate remotely', false,
                     null,null,null, renderingOptionsAuthenticationPasswordStorage))
             .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,

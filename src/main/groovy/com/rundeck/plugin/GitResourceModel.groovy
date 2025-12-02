@@ -58,6 +58,13 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             gitManager = new GitManager(configuration)
         }
 
+        // Plain text password (less secure, checked first)
+        // Support old property name for backwards compatibility
+        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
+            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+        }
+
+        // Key Storage password (more secure, takes precedence if both are set)
         if(services && configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)){
             ExecutionContext context = new ExecutionContextImpl.Builder()
                     .framework(framework)
@@ -65,11 +72,9 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
                     .build();
 
             def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH), context)
-            gitManager.setGitPassword(password)
-        }
-
-        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
-            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+            if (password != null) {
+                gitManager.setGitPassword(password)
+            }
         }
 
         if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {

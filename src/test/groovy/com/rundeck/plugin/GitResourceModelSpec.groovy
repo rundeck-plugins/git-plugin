@@ -170,8 +170,6 @@ class GitResourceModelSpec  extends Specification{
         def nodeSet = Mock(INodeSet)
         def framework = getFramework(nodeSet)
 
-
-
         String path = "resources"
         String fileName = "resources.xml"
         String format = "xml"
@@ -185,7 +183,7 @@ class GitResourceModelSpec  extends Specification{
                 gitBaseDirectory:path,
                 gitFormatFile:format,
                 gitFile:fileName,
-                gitPasswordPathStorage:"gitPassword",
+                gitPasswordPathStorage:"keys/git/password",
         ]
 
         def gitManager = Mock(GitManager)
@@ -216,9 +214,6 @@ class GitResourceModelSpec  extends Specification{
         then:
         1 * gitManager.getFile(path) >> inputStream
         result == nodeSet
-
-
-
     }
 
 
