@@ -1,5 +1,66 @@
-.idea
-.gradle
-build
-**/.DS_Store
-.vscode
+# Gradle
+.gradle/
+build/
+bin/
+!gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
+gradle-app.setting
+!gradle-wrapper.properties
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Java
+*.class
+*.log
+*.ctxt
+.mtj.tmp/
+*.jar
+!gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.jar
+hs_err_pid*
+replay_pid*
+
+# Groovy
+*.groovy~
+
+# Build artifacts
+out/
+target/
+dist/
+*.war
+*.ear
+*.sar
+*.zip
+*.tar.gz
+*.rar
+
+# Runtime
+.attach_pid*
+*.tmp
+*.temp
+
+# Logs
+logs/
+*.log
+
+# Test results
+test-results/
+.scannerwork/
+
+# Local environment
+local.properties
+.env
