@@ -37,14 +37,26 @@ class GitPluginUtil {
         return ret;
     }
 
+    /**
+     * Reads the contents of a ResourceMeta and returns it as a String.
+     * 
+     * @param contents the ResourceMeta to read
+     * @return the contents as a UTF-8 String
+     * @throws IOException if an error occurs reading the contents
+     */
+    private static String readResourceMetaAsString(ResourceMeta contents) throws IOException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        try {
+            contents.writeContent(byteArrayOutputStream);
+            return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
+        } finally {
+            byteArrayOutputStream.close();
+        }
+    }
+
     static String getFromKeyStorage(String path, PluginStepContext context){
         ResourceMeta contents = context.getExecutionContext().getStorageTree().getResource(path).getContents();
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        contents.writeContent(byteArrayOutputStream);
-        String password = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-
-        return password;
-
+        return readResourceMetaAsString(contents);
     }
 
     /**
@@ -68,14 +80,7 @@ class GitPluginUtil {
 
         try {
             ResourceMeta contents = storageTree.getResource(path).getContents();
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            try {
-                contents.writeContent(byteArrayOutputStream);
-                String password = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-                return password;
-            } finally {
-                byteArrayOutputStream.close();
-            }
+            return readResourceMetaAsString(contents);
         } catch (Exception e) {
             ExecutionListener logger = context.getExecutionListener()
             logger.log(1, "Failed to retrieve password from Key Storage at path '${path}': ${e.message}");

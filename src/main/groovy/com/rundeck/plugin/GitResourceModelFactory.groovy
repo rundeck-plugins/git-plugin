@@ -38,6 +38,7 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
     public final static String GIT_BRANCH="gitBranch"
     public final static String GIT_HOSTKEY_CHECKING="strictHostKeyChecking"
     public final static String GIT_KEY_STORAGE="gitKeyPath"
+    public final static String GIT_KEY_STORAGE_PATH="gitKeyPathStorage"
     public final static String GIT_PASSWORD_STORAGE="gitPasswordPath"
     public final static String GIT_PASSWORD_STORAGE_PATH="gitPasswordPathStorage"
 
@@ -47,6 +48,7 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
     final static Map<String, Object> renderingOptionsAuthentication = GitPluginUtil.getRenderOpt("Authentication",false)
     final static Map<String, Object> renderingOptionsAuthenticationPassword = GitPluginUtil.getRenderOpt("Authentication",false, true)
     final static Map<String, Object> renderingOptionsAuthenticationPasswordStorage = GitPluginUtil.getRenderOpt("Authentication",false, false, true)
+    final static Map<String, Object> renderingOptionsAuthenticationKeyStorage = GitPluginUtil.getRenderOpt("Authentication",false, false, false, true)
     final static Map<String, Object> renderingOptionsConfig = GitPluginUtil.getRenderOpt("Configuration",false)
 
     GitResourceModelFactory(Framework framework) {
@@ -87,8 +89,10 @@ Some examples:
             .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,
             "yes", LIST_HOSTKEY_CHECKING,null, renderingOptionsAuthentication))
-            .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path", 'SSH Key Path', false,
+            .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path (Filesystem)", 'SSH Key Path from filesystem', false,
             null,null,null, renderingOptionsAuthentication))
+            .property(PropertyUtil.string(GIT_KEY_STORAGE_PATH, "SSH Key Storage Path", 'SSH Key storage path from Rundeck Key Storage', false,
+            null,null,null, renderingOptionsAuthenticationKeyStorage))
             .build()
 
     @Override

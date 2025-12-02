@@ -65,11 +65,14 @@ If both password fields are configured, the Key Storage path takes precedence fo
 #### SSH Key Authentication
 * **SSH: Strict Host Key Checking**: Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
-* **SSH Key Path**: SSH Key Path to authenticate
+* **SSH Key Path (Filesystem)**: SSH Key Path from filesystem to authenticate
+* **SSH Key Storage Path**: SSH Key storage path from Rundeck Key Storage (more secure - recommended)
 
-**Recommended:** Use Key Storage for passwords instead of plain text. To use Key Storage:
-1. Store your password in Rundeck Key Storage (under `keys/` path)
-2. Select the password path using the Key Storage browser in the plugin configuration
+If both SSH key fields are configured, the Key Storage path takes precedence for security.
+
+**Recommended:** Use Key Storage for credentials instead of plain text or filesystem paths. To use Key Storage:
+1. Store your password or SSH key in Rundeck Key Storage (under `keys/` path)
+2. Select the credential path using the Key Storage browser in the plugin configuration
 
 ### Limitations
 

@@ -216,6 +216,58 @@ class GitResourceModelSpec  extends Specification{
         result == nodeSet
     }
 
+    def "retrieve resource success using SSH key authentication from key storage"() {
+        given:
+
+        def nodeSet = Mock(INodeSet)
+        def framework = getFramework(nodeSet)
+
+        String path = "resources"
+        String fileName = "resources.xml"
+        String format = "xml"
+
+        File folder = new File(path)
+        if(!folder.exists()){
+            folder.mkdir()
+        }
+
+        Properties configuration = [
+                gitBaseDirectory:path,
+                gitFormatFile:format,
+                gitFile:fileName,
+                gitKeyPathStorage:"keys/git/ssh-key",
+        ]
+
+        def gitManager = Mock(GitManager)
+
+        def inputStream = GroovyMock(InputStream)
+        KeyStorageTree keyStorageTree = Mock(KeyStorageTree){
+            1 * getResource(_) >> Mock(Resource) {
+                1* getContents() >> Mock(ResourceMeta) {
+                    writeContent(_) >> { args ->
+                        args[0].write('-----BEGIN RSA PRIVATE KEY-----\ntest key content\n-----END RSA PRIVATE KEY-----'.bytes)
+                        return 65L
+                    }
+                }
+            }
+        }
+
+        Services services = Mock(Services){
+            1 * getService(KeyStorageTree) >> keyStorageTree
+        }
+
+        when:
+
+        def resource = new GitResourceModel(services,configuration,framework)
+        resource.setGitManager(gitManager)
+
+        def result = resource.getNodes()
+
+        then:
+        1 * gitManager.getFile(path) >> inputStream
+        result == nodeSet
+    }
+
 
     private Framework getFramework(INodeSet nodeSet){
         def resourceFormatParser = Mock(ResourceFormatParser){

@@ -77,8 +77,22 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             }
         }
 
+        // SSH Key from filesystem path (checked first)
         if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {
             gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE))
+        }
+
+        // SSH Key from Key Storage (takes precedence if both are set)
+        if(services && configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)){
+            ExecutionContext context = new ExecutionContextImpl.Builder()
+                    .framework(framework)
+                    .storageTree(services.getService(KeyStorageTree.class))
+                    .build();
+
+            def sshKey = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH), context)
+            if (sshKey != null) {
+                gitManager.setSshPrivateKey(sshKey)
+            }
         }
     }
 
