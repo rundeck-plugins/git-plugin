@@ -54,10 +54,111 @@ You need to set up the following options to use the plugin:
 
 ### Authentication
 
-* **Git Password**: Password to authenticate remotely
-* **SSH: Strict Host Key Checking**: Use strict host key checking.
-If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
-* **SSH Key Path**: SSH Key Path to authenticate
+The plugin supports multiple authentication methods. **Key Storage is recommended** for secure credential management.
+
+#### Password Authentication
+
+##### Option 1: Key Storage (Recommended)
+* **Git Password Storage Path**: Key storage path for Git password (secure)
+
+**How to use:**
+1. Navigate to Rundeck **System Menu** → **Key Storage**
+2. Click **Add or Upload a Key** → **Password**
+3. Enter a path like `keys/git/myrepo-password` and your Git password
+4. In the Resource Model configuration, use the **Key Storage browser** to select the password path
+
+**Example paths:**
+```
+keys/git/github-token          # GitHub personal access token
+keys/git/gitlab-password        # GitLab password
+keys/project1/git-auth          # Project-specific credentials
+```
+
+##### Option 2: Plain Text (Less Secure)
+* **Git Password (Plain Text)**: Password to authenticate remotely (not recommended for production)
+
+**Note:** If both are configured, Key Storage takes precedence.
+
+---
+
+#### SSH Key Authentication
+
+##### Option 1: Key Storage (Recommended)
+* **SSH Key Storage Path**: SSH Key from Rundeck Key Storage (secure)
+
+**How to use:**
+1. Navigate to Rundeck **System Menu** → **Key Storage**
+2. Click **Add or Upload a Key** → **Private Key**
+3. Upload your SSH private key (e.g., `id_rsa`) and save it with a path like `keys/git/ssh-key`
+4. In the Resource Model configuration, use the **Key Storage browser** to select the key path
+
+**Example paths:**
+```
+keys/git/deployment-key         # Deployment key for specific repo
+keys/git/github-ssh-key         # GitHub SSH key
+keys/shared/git-readonly-key    # Shared read-only access key
+```
+
+##### Option 2: Filesystem Path (Legacy)
+* **SSH Key Path (Filesystem)**: Path to SSH key file on the Rundeck server filesystem
+
+**Example:** `/home/rundeck/.ssh/id_rsa`
+
+**Note:** If both are configured, Key Storage takes precedence.
+
+##### SSH Host Key Checking
+* **SSH: Strict Host Key Checking**: 
+  - `yes` - Require remote host SSH key is defined in `~/.ssh/known_hosts` (more secure)
+  - `no` - Skip host key verification (less secure, useful for testing)
+
+---
+
+#### Authentication Examples by Git URL Type
+
+| Git URL Type | Recommended Auth | Example URL |
+|--------------|------------------|-------------|
+| HTTPS with token | Password Storage (token) | `https://github.com/user/repo.git` |
+| HTTPS with password | Password Storage | `https://username@github.com/user/repo.git` |
+| SSH | SSH Key Storage | `git@github.com:user/repo.git` |
+| SSH | SSH Key Storage | `ssh://git@github.com/user/repo.git` |
+
+**Important:** For HTTPS authentication, include the username in the URL: `https://username@host.com/repo.git`
+
+---
+
+#### Troubleshooting Authentication
+
+**Problem: "Authentication failed" error**
+- Verify the Key Storage path is correct (e.g., `keys/git/password`, not `/keys/git/password`)
+- Ensure the credential exists in Key Storage
+- For HTTPS: Include username in Git URL (`https://user@github.com/...`)
+- For SSH: Verify host key is in `known_hosts` if strict checking is enabled
+
+**Problem: "storageTree is null" in logs**
+- The plugin requires Services API (Rundeck 5.16.0+)
+- Fallback to filesystem/plain text options if Key Storage is unavailable
+
+**Problem: SSH authentication fails**
+- Verify SSH key format (OpenSSH format, starts with `-----BEGIN RSA PRIVATE KEY-----` or similar)
+- Check SSH key permissions if using filesystem path (should be `600`)
+- For GitHub/GitLab, ensure the public key is added to your account
+- Try with `Strict Host Key Checking = no` for initial testing
+
+**Problem: Key Storage path not found**
+- Key Storage paths should start with `keys/` (e.g., `keys/git/password`)
+- Use the Key Storage browser in the UI to select the correct path
+- Verify the key type matches (password vs private key)
+
+---
+
+#### Security Best Practices
+
+1. **Always use Key Storage** in production environments
+2. **Use project-specific keys** when possible (e.g., `keys/project1/git-key`)
+3. **Use deployment keys** with minimal permissions for SSH
+4. **Use personal access tokens** instead of passwords for HTTPS (GitHub, GitLab, etc.)
+5. **Rotate credentials regularly** and update them in Key Storage
+6. **Enable strict host key checking** for SSH in production
 
 ### Limitations
 
@@ -86,10 +187,17 @@ This plugin can clone/pull, add, commit, and push a git repository via 4 Workflo
 
 ##### Authentication
 
-* **Password Storage Path**: Password storage path to authenticate remotely. This can be an Access Token - such as a Github access token.
-* **SSH: Strict Host Key Checking**: Use strict host key checking.
-If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.
-* **SSH Key Storage Path**: SSH Key storage path to authenticate
+The workflow steps support the same authentication methods as the Resource Model:
+
+* **Password Storage Path**: Key Storage path for Git password or access token (e.g., `keys/git/github-token`)
+* **SSH Key Storage Path**: Key Storage path for SSH private key (e.g., `keys/git/ssh-key`)
+* **SSH: Strict Host Key Checking**: 
+  - `yes` - Require host key in `~/.ssh/known_hosts` (recommended for production)
+  - `no` - Skip host key verification (useful for testing)
+
+**Tip:** You can use GitHub/GitLab personal access tokens as passwords for HTTPS authentication.
+
+For detailed authentication setup and troubleshooting, see the [Authentication section](#authentication) above.
 
 ### GIT Clone Workflow Step
 
@@ -156,5 +264,82 @@ You need to set up following additional options to use the plugin:
 ##### Repo Settings
 
 * **Message**: Commit message to be used. Defaults to `Rundeck Commit`
-* **Add**: Adds all contents of the git repo before commiting. Defaults to `False`. If you need to be more specific, please use `GIT / Add` workflow step.
-* **Push**: Pushes the repository after commiting the changes. Defaults to `False`.
+* **Add**: Adds all contents of the git repo before committing. Defaults to `False`. If you need to be more specific, please use `GIT / Add` workflow step.
+* **Push**: Pushes the repository after committing the changes. Defaults to `False`.
+
+---
+
+## Quick Reference
+
+### Key Storage Setup
+
+**For Passwords/Tokens:**
+1. System Menu → Key Storage → Add or Upload a Key → **Password**
+2. Path format: `keys/git/your-credential-name`
+3. Select in plugin using Key Storage browser
+
+**For SSH Keys:**
+1. System Menu → Key Storage → Add or Upload a Key → **Private Key**
+2. Upload your private key file (e.g., `id_rsa`)
+3. Path format: `keys/git/your-key-name`
+4. Select in plugin using Key Storage browser
+
+### Common Configuration Scenarios
+
+#### Scenario 1: Public GitHub Repo (Read-Only)
+```
+Git URL: https://github.com/user/repo.git
+Branch: main
+Authentication: None required
+```
+
+#### Scenario 2: Private GitHub Repo with Personal Access Token
+```
+Git URL: https://github.com/user/repo.git
+Branch: main
+Authentication: Git Password Storage Path → keys/git/github-token
+(Store GitHub PAT in Key Storage as password)
+```
+
+#### Scenario 3: Private GitLab Repo with SSH Key
+```
+Git URL: git@gitlab.com:user/repo.git
+Branch: main
+Authentication: SSH Key Storage Path → keys/git/gitlab-ssh-key
+Strict Host Key Checking: yes
+```
+
+#### Scenario 4: Private Repo with HTTPS Username/Password
+```
+Git URL: https://username@github.com/user/repo.git
+Branch: main
+Authentication: Git Password Storage Path → keys/git/password
+(Include username in URL)
+```
+
+### Property Reference
+
+| Property Name | Description | Example Value |
+|--------------|-------------|---------------|
+| `gitUrl` | Git repository URL | `https://github.com/user/repo.git` |
+| `gitBaseDirectory` | Local checkout directory | `/var/rundeck/git-repos/project1` |
+| `gitBranch` | Branch to checkout | `main` or `develop` |
+| `gitFile` | Resource model file in repo | `resources.yaml` |
+| `gitFormatFile` | File format | `xml`, `yaml`, or `json` |
+| `gitPasswordPath` | Plain text password | `mypassword` (not recommended) |
+| `gitPasswordPathStorage` | Key Storage path for password | `keys/git/password` |
+| `gitKeyPath` | Filesystem SSH key path | `/home/rundeck/.ssh/id_rsa` |
+| `gitKeyPathStorage` | Key Storage path for SSH key | `keys/git/ssh-key` |
+| `strictHostKeyChecking` | SSH host key verification | `yes` or `no` |
+| `writable` | Allow writing to remote | `true` or `false` |
+
+### Version Requirements
+
+- **Rundeck 5.16.0 or later** - Required for Key Storage support
+- Earlier versions can use filesystem paths and plain text authentication
+
+### Support
+
+For issues or questions:
+- GitHub Issues: [rundeck-plugins/git-plugin](https://github.com/rundeck-plugins/git-plugin/issues)
+- Rundeck Documentation: [https://docs.rundeck.com](https://docs.rundeck.com)

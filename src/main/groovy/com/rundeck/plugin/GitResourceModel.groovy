@@ -10,11 +10,17 @@ import com.dtolabs.rundeck.core.resources.format.ResourceFormatParser
 import com.dtolabs.rundeck.core.resources.format.ResourceFormatParserException
 import com.dtolabs.rundeck.core.resources.format.UnsupportedFormatException
 import com.dtolabs.utils.Streams
-
+import com.dtolabs.rundeck.core.execution.ExecutionContext
+import com.dtolabs.rundeck.core.execution.ExecutionContextImpl
+import com.rundeck.plugin.util.GitPluginUtil
+import groovy.transform.CompileStatic
+import org.rundeck.app.spi.Services
+import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree
 
 /**
  * Created by luistoledo on 12/18/17.
  */
+@CompileStatic
 class GitResourceModel implements ResourceModelSource , WriteableModelSource{
 
     private Properties configuration;
@@ -31,8 +37,15 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
         this.writable=true;
     }
 
+    GitResourceModel(Services services, Properties configuration, Framework framework) {
+        configure(configuration,framework,services)
+    }
 
     GitResourceModel(Properties configuration, Framework framework) {
+        configure(configuration,framework, null)
+    }
+
+    def configure(Properties configuration, Framework framework, Services services){
         this.configuration = configuration
         this.framework = framework
 
@@ -45,14 +58,41 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             gitManager = new GitManager(configuration)
         }
 
-        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE)) {
-            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE))
+        // Plain text password (less secure, checked first)
+        // Support old property name for backwards compatibility
+        if(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_PATH)) {
+            gitManager.setGitPassword(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_PATH))
         }
 
-        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE)) {
-            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE))
+        // SSH Key from filesystem path (checked first)
+        if(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH)) {
+            gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH))
         }
 
+        // Create execution context once for Key Storage operations
+        ExecutionContext context = null
+        if (services) {
+            context = new ExecutionContextImpl.Builder()
+                    .framework(framework)
+                    .storageTree(services.getService(KeyStorageTree.class))
+                    .build()
+        }
+
+        // Key Storage password (more secure, takes precedence if both are set)
+        if(context && configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)){
+            def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH), context)
+            if (password != null) {
+                gitManager.setGitPassword(password)
+            }
+        }
+
+        // SSH Key from Key Storage (takes precedence if both are set)
+        if(context && configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)){
+            def sshKey = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH), context)
+            if (sshKey != null) {
+                gitManager.setSshPrivateKey(sshKey)
+            }
+        }
     }
 
     @Override
@@ -80,7 +120,6 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             throw new ResourceModelSourceException(
                     "Error requesting Resource Model Source from GIT, " +e.getMessage(),e);
         }
-        return null
     }
 
     private ResourceFormatParser getResourceFormatParser() throws UnsupportedFormatException {
@@ -98,18 +137,18 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
     }
 
     @Override
-    public SourceType getSourceType() {
+    SourceType getSourceType() {
         return writable ? SourceType.READ_WRITE : SourceType.READ_ONLY;
     }
 
     @Override
-    public WriteableModelSource getWriteable() {
+    WriteableModelSource getWriteable() {
         return writable ? this : null;
     }
 
 
     @Override
-    public String getSyntaxMimeType() {
+    String getSyntaxMimeType() {
         try {
             return getResourceFormatParser().getPreferredMimeType();
         } catch (UnsupportedFormatException e) {
@@ -140,7 +179,7 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
     }
 
     @Override
-    public long writeData(InputStream data) throws IOException, ResourceModelSourceException {
+    long writeData(InputStream data) throws IOException, ResourceModelSourceException {
         if (!writable) {
             throw new IllegalArgumentException("Cannot write to file, it is not configured to be writeable");
         }
@@ -172,7 +211,7 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
     }
 
     @Override
-    public String getSourceDescription() {
+    String getSourceDescription() {
         String gitURL=configuration.getProperty(GitResourceModelFactory.GIT_URL)
         return "Git repo: "+gitURL+", file:"+this.fileName;
     }

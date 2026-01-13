@@ -12,12 +12,13 @@ import com.dtolabs.rundeck.plugins.ServiceNameConstants
 import com.dtolabs.rundeck.plugins.descriptions.PluginDescription
 import com.dtolabs.rundeck.plugins.util.DescriptionBuilder
 import com.rundeck.plugin.util.GitPluginUtil
+import org.rundeck.app.spi.Services;
 
 /**
  * Created by luistoledo on 12/18/17.
  */
-@Plugin(name = GitResourceModelFactory.PROVIDER_NAME, service = ServiceNameConstants.ResourceModelSource)
-@PluginDescription(title = GitResourceModelFactory.PROVIDER_TITLE, description = GitResourceModelFactory.PROVIDER_DESCRIPTION)
+@Plugin(name = PROVIDER_NAME, service = ServiceNameConstants.ResourceModelSource)
+@PluginDescription(title = PROVIDER_TITLE, description = PROVIDER_DESCRIPTION)
 class GitResourceModelFactory implements ResourceModelSourceFactory,Describable {
 
     private Framework framework;
@@ -36,13 +37,18 @@ class GitResourceModelFactory implements ResourceModelSourceFactory,Describable 
     public final static String GIT_FORMAT_FILE="gitFormatFile"
     public final static String GIT_BRANCH="gitBranch"
     public final static String GIT_HOSTKEY_CHECKING="strictHostKeyChecking"
-    public final static String GIT_KEY_STORAGE="gitKeyPath"
-    public final static String GIT_PASSWORD_STORAGE="gitPasswordPath"
+    public final static String GIT_KEY_PATH="gitKeyPath"
+    public final static String GIT_KEY_STORAGE_PATH="gitKeyPathStorage"
+    public final static String GIT_PASSWORD_PATH="gitPasswordPath"
+    public final static String GIT_PASSWORD_STORAGE_PATH="gitPasswordPathStorage"
+
     public static final String WRITABLE="writable";
 
 
     final static Map<String, Object> renderingOptionsAuthentication = GitPluginUtil.getRenderOpt("Authentication",false)
     final static Map<String, Object> renderingOptionsAuthenticationPassword = GitPluginUtil.getRenderOpt("Authentication",false, true)
+    final static Map<String, Object> renderingOptionsAuthenticationPasswordStorage = GitPluginUtil.getRenderOpt("Authentication",false, false, true)
+    final static Map<String, Object> renderingOptionsAuthenticationKeyStorage = GitPluginUtil.getRenderOpt("Authentication",false, false, false, true)
     final static Map<String, Object> renderingOptionsConfig = GitPluginUtil.getRenderOpt("Configuration",false)
 
     GitResourceModelFactory(Framework framework) {
@@ -72,20 +78,22 @@ Some examples:
             .property(PropertyUtil.string(GIT_FILE, "Resource model File", "Resource model file inside the github repo.", true,
             null,null,null, renderingOptionsConfig))
             .property(PropertyUtil.select(GIT_FORMAT_FILE, "File Format", 'File Format', true,
-            "xml",GitResourceModelFactory.LIST_FILE_TYPE,null, renderingOptionsConfig))
+            "xml", LIST_FILE_TYPE,null, renderingOptionsConfig))
             .property(PropertyUtil.bool(WRITABLE, "Writable",
             "Allow to write the remote file.",
             false,"false",null,renderingOptionsConfig))
-            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE, "Git Password", 'Password to authenticate remotely', false,
+            .property(PropertyUtil.string(GIT_PASSWORD_PATH, "Git Password (Plain Text)", 'Password to authenticate remotely (plain text)', false,
             null,null,null, renderingOptionsAuthenticationPassword))
+            .property(PropertyUtil.string(GIT_PASSWORD_STORAGE_PATH, "Git Password Storage Path", 'Key storage path for Git password to authenticate remotely', false,
+                    null,null,null, renderingOptionsAuthenticationPasswordStorage))
             .property(PropertyUtil.select(GIT_HOSTKEY_CHECKING, "SSH: Strict Host Key Checking", '''Use strict host key checking.
 If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` file, otherwise do not verify.''', false,
-            "yes",GitResourceModelFactory.LIST_HOSTKEY_CHECKING,null, renderingOptionsAuthentication))
-            .property(PropertyUtil.string(GIT_KEY_STORAGE, "SSH Key Path", 'SSH Key Path', false,
+            "yes", LIST_HOSTKEY_CHECKING,null, renderingOptionsAuthentication))
+            .property(PropertyUtil.string(GIT_KEY_PATH, "SSH Key Path (Filesystem)", 'SSH Key Path from filesystem', false,
             null,null,null, renderingOptionsAuthentication))
+            .property(PropertyUtil.string(GIT_KEY_STORAGE_PATH, "SSH Key Storage Path", 'SSH Key storage path from Rundeck Key Storage', false,
+            null,null,null, renderingOptionsAuthenticationKeyStorage))
             .build()
-
-
 
     @Override
     Description getDescription() {
@@ -94,8 +102,11 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
     @Override
     ResourceModelSource createResourceModelSource(Properties configuration) throws ConfigurationException {
-        final GitResourceModel resource = new GitResourceModel(configuration,framework)
+        return new GitResourceModel(configuration,framework)
+    }
 
-        return resource
+    @Override
+    ResourceModelSource createResourceModelSource(final Services services, final Properties configuration) throws ConfigurationException {
+        return new GitResourceModel(services, configuration,framework)
     }
 }
