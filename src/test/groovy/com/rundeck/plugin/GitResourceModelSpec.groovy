@@ -225,7 +225,6 @@ class GitResourceModelSpec  extends Specification{
         String path = "resources"
         String fileName = "resources.xml"
         String format = "xml"
-
         File folder = new File(path)
         if(!folder.exists()){
             folder.mkdir()
