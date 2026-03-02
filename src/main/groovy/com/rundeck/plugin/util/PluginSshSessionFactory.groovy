@@ -1,61 +1,85 @@
 package com.rundeck.plugin.util
 
-import com.jcraft.jsch.JSch
-import com.jcraft.jsch.JSchException
-import com.jcraft.jsch.Session
+import org.apache.sshd.client.config.hosts.HostConfigEntry
 import org.eclipse.jgit.api.TransportConfigCallback
-import org.eclipse.jgit.transport.ssh.jsch.JschConfigSessionFactory
-import org.eclipse.jgit.transport.ssh.jsch.OpenSshConfig
 import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.transport.Transport
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder
 import org.eclipse.jgit.util.FS
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 /**
- * Created by luistoledo on 12/20/17.
+ * SSH session factory using Apache MINA SSHD instead of JSch.
+ * Provides support for modern SSH algorithms including RSA with SHA-2 signatures.
  */
-class PluginSshSessionFactory  extends JschConfigSessionFactory implements TransportConfigCallback {
+class PluginSshSessionFactory implements TransportConfigCallback {
     private byte[] privateKey
     Map<String, String> sshConfig
+    private SshdSessionFactory sessionFactory
 
     PluginSshSessionFactory(final byte[] privateKey) {
         this.privateKey = privateKey
+        this.sessionFactory = buildSessionFactory()
     }
 
-    @Override
-    protected void configure(final OpenSshConfig.Host hc, final Session session) {
-        if (sshConfig) {
-            sshConfig.each { k, v ->
-                session.setConfig(k, v)
-            }
-        }
-    }
-
-    @Override
-    protected JSch createDefaultJSch(final FS fs) throws JSchException {
-        JSch jsch = super.createDefaultJSch(fs)
-        jsch.removeAllIdentity()
-        jsch.addIdentity("private", privateKey, null, null)
-        //todo: explicitly set known host keys?
-        return jsch
-    }
-
-    @Override
-    protected Session createSession(
-            final OpenSshConfig.Host hc,
-            final String user,
-            final String host,
-            final int port,
-            final FS fs
-    ) throws JSchException
-    {
-        return super.createSession(hc, user, host, port, fs)
+    private SshdSessionFactory buildSessionFactory() {
+        def builder = new SshdSessionFactoryBuilder()
+        
+        def factory = builder
+            .setPreferredAuthentications("publickey")
+            .build(null)
+        
+        return new CustomSshdSessionFactory(factory, privateKey, sshConfig)
     }
 
     @Override
     void configure(final Transport transport) {
-        if (transport instanceof SshTransport) {
+        if (transport in SshTransport) {
             SshTransport sshTransport = (SshTransport) transport
-            sshTransport.setSshSessionFactory(this)
+            sshTransport.setSshSessionFactory(sessionFactory)
+        }
+    }
+
+    private static class CustomSshdSessionFactory extends SshdSessionFactory {
+        private final SshdSessionFactory delegate
+        private final byte[] privateKey
+        private final Map<String, String> sshConfig
+
+        CustomSshdSessionFactory(SshdSessionFactory delegate, byte[] privateKey, Map<String, String> sshConfig) {
+            super(null, null)
+            this.delegate = delegate
+            this.privateKey = privateKey
+            this.sshConfig = sshConfig
+        }
+
+        @Override
+        File getSshDirectory() {
+            return delegate.getSshDirectory()
+        }
+
+        @Override
+        List<Path> getDefaultIdentities(File sshDir) {
+            if (privateKey) {
+                Path tempKeyFile = Files.createTempFile("rundeck-git-key-", ".pem")
+                tempKeyFile.toFile().deleteOnExit()
+                Files.write(tempKeyFile, privateKey)
+                return [tempKeyFile]
+            }
+            return delegate.getDefaultIdentities(sshDir)
+        }
+
+        void configure(HostConfigEntry hostConfig, org.apache.sshd.client.session.ClientSession session) {
+            if (sshConfig) {
+                if (sshConfig.containsKey('StrictHostKeyChecking')) {
+                    String value = sshConfig['StrictHostKeyChecking']
+                    if (value == 'no') {
+                        session.setServerKeyVerifier({ clientSession, remoteAddress, serverKey -> true })
+                    }
+                }
+            }
         }
     }
 }
