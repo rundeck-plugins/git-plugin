@@ -1,15 +1,16 @@
 package com.rundeck.plugin.util
 
-import org.apache.sshd.client.config.hosts.HostConfigEntry
 import org.eclipse.jgit.api.TransportConfigCallback
+import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.transport.Transport
+import org.eclipse.jgit.transport.sshd.ServerKeyDatabase
 import org.eclipse.jgit.transport.sshd.SshdSessionFactory
-import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder
-import org.eclipse.jgit.util.FS
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.attribute.PosixFilePermissions
+import java.security.PublicKey
 
 /**
  * SSH session factory using Apache MINA SSHD instead of JSch.
@@ -18,69 +19,68 @@ import java.nio.file.Path
 class PluginSshSessionFactory implements TransportConfigCallback {
     private byte[] privateKey
     Map<String, String> sshConfig
-    private SshdSessionFactory sessionFactory
 
     PluginSshSessionFactory(final byte[] privateKey) {
         this.privateKey = privateKey
-        this.sessionFactory = buildSessionFactory()
-    }
-
-    private SshdSessionFactory buildSessionFactory() {
-        def builder = new SshdSessionFactoryBuilder()
-        
-        def factory = builder
-            .setPreferredAuthentications("publickey")
-            .build(null)
-        
-        return new CustomSshdSessionFactory(factory, privateKey, sshConfig)
     }
 
     @Override
     void configure(final Transport transport) {
         if (transport in SshTransport) {
             SshTransport sshTransport = (SshTransport) transport
-            sshTransport.setSshSessionFactory(sessionFactory)
+            sshTransport.setSshSessionFactory(buildSessionFactory())
         }
     }
 
+    private SshdSessionFactory buildSessionFactory() {
+        return new CustomSshdSessionFactory(privateKey, sshConfig)
+    }
+
     private static class CustomSshdSessionFactory extends SshdSessionFactory {
-        private final SshdSessionFactory delegate
         private final byte[] privateKey
         private final Map<String, String> sshConfig
+        private Path cachedKeyFile
 
-        CustomSshdSessionFactory(SshdSessionFactory delegate, byte[] privateKey, Map<String, String> sshConfig) {
+        CustomSshdSessionFactory(byte[] privateKey, Map<String, String> sshConfig) {
             super(null, null)
-            this.delegate = delegate
             this.privateKey = privateKey
             this.sshConfig = sshConfig
         }
 
         @Override
-        File getSshDirectory() {
-            return delegate.getSshDirectory()
+        protected List<Path> getDefaultIdentities(File sshDir) {
+            if (privateKey) {
+                if (cachedKeyFile == null || !Files.exists(cachedKeyFile)) {
+                    cachedKeyFile = Files.createTempFile("rundeck-git-key-", ".pem")
+                    try {
+                        Files.setPosixFilePermissions(cachedKeyFile, PosixFilePermissions.fromString("rw-------"))
+                    } catch (UnsupportedOperationException ignored) {
+                        // Non-POSIX filesystem (e.g. Windows)
+                    }
+                    Files.write(cachedKeyFile, privateKey)
+                    cachedKeyFile.toFile().deleteOnExit()
+                }
+                return [cachedKeyFile]
+            }
+            return super.getDefaultIdentities(sshDir)
         }
 
         @Override
-        List<Path> getDefaultIdentities(File sshDir) {
-            if (privateKey) {
-                Path tempKeyFile = Files.createTempFile("rundeck-git-key-", ".pem")
-                tempKeyFile.toFile().deleteOnExit()
-                Files.write(tempKeyFile, privateKey)
-                return [tempKeyFile]
-            }
-            return delegate.getDefaultIdentities(sshDir)
-        }
+        protected ServerKeyDatabase getServerKeyDatabase(File homeDir, File sshDir) {
+            if (sshConfig?.get('StrictHostKeyChecking') == 'no') {
+                return new ServerKeyDatabase() {
+                    @Override
+                    List<PublicKey> lookup(String connectAddress, InetSocketAddress remoteAddress, ServerKeyDatabase.Configuration config) {
+                        return Collections.emptyList()
+                    }
 
-        void configure(HostConfigEntry hostConfig, org.apache.sshd.client.session.ClientSession session) {
-            if (sshConfig) {
-                if (sshConfig.containsKey('StrictHostKeyChecking')) {
-                    String value = sshConfig['StrictHostKeyChecking']
-                    if (value == 'no') {
-                        session.setServerKeyVerifier({ clientSession, remoteAddress, serverKey -> true })
+                    @Override
+                    boolean accept(String connectAddress, InetSocketAddress remoteAddress, PublicKey serverKey, ServerKeyDatabase.Configuration config, CredentialsProvider provider) {
+                        return true
                     }
                 }
             }
+            return super.getServerKeyDatabase(homeDir, sshDir)
         }
     }
 }
-
