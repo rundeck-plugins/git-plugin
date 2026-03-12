@@ -16,12 +16,16 @@ import com.rundeck.plugin.util.GitPluginUtil
 import groovy.transform.CompileStatic
 import org.rundeck.app.spi.Services
 import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Created by luistoledo on 12/18/17.
  */
 @CompileStatic
 class GitResourceModel implements ResourceModelSource , WriteableModelSource{
+
+    private static final Logger logger = LoggerFactory.getLogger(GitResourceModel.class)
 
     private Properties configuration;
     private Framework framework;
@@ -69,29 +73,42 @@ class GitResourceModel implements ResourceModelSource , WriteableModelSource{
             gitManager.setSshPrivateKeyPath(configuration.getProperty(GitResourceModelFactory.GIT_KEY_PATH))
         }
 
-        // Create execution context once for Key Storage operations
+        // Create execution context for Key Storage operations
         ExecutionContext context = null
         if (services) {
-            context = new ExecutionContextImpl.Builder()
-                    .framework(framework)
-                    .storageTree(services.getService(KeyStorageTree.class))
-                    .build()
+            try {
+                KeyStorageTree storageTree = services.getService(KeyStorageTree.class)
+                if (storageTree != null) {
+                    context = new ExecutionContextImpl.Builder()
+                            .framework(framework)
+                            .storageTree(storageTree)
+                            .build()
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to get KeyStorageTree from services: {}", e.message)
+            }
         }
 
-        // Key Storage password (more secure, takes precedence if both are set)
-        if(context && configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)){
-            def password = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH), context)
+        // Key Storage password (takes precedence over plain text password)
+        String passwordStoragePath = configuration.getProperty(GitResourceModelFactory.GIT_PASSWORD_STORAGE_PATH)
+        if(context && passwordStoragePath){
+            def password = GitPluginUtil.getFromKeyStorage(passwordStoragePath, context)
             if (password != null) {
                 gitManager.setGitPassword(password)
             }
         }
 
-        // SSH Key from Key Storage (takes precedence if both are set)
-        if(context && configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)){
-            def sshKey = GitPluginUtil.getFromKeyStorage(configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH), context)
+        // SSH Key from Key Storage (takes precedence over filesystem path)
+        String keyStoragePath = configuration.getProperty(GitResourceModelFactory.GIT_KEY_STORAGE_PATH)
+        if(context && keyStoragePath){
+            def sshKey = GitPluginUtil.getFromKeyStorage(keyStoragePath, context)
             if (sshKey != null) {
                 gitManager.setSshPrivateKey(sshKey)
+            } else {
+                logger.warn("SSH key from Key Storage at path '{}' could not be retrieved", keyStoragePath)
             }
+        } else if (keyStoragePath && !context) {
+            logger.warn("SSH Key Storage path '{}' configured but Key Storage service is unavailable", keyStoragePath)
         }
     }
 
