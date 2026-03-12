@@ -5,15 +5,17 @@ import com.dtolabs.rundeck.core.storage.ResourceMeta
 import com.dtolabs.rundeck.plugins.step.PluginStepContext
 import com.dtolabs.rundeck.core.execution.ExecutionContext
 import com.dtolabs.rundeck.core.storage.keys.KeyStorageTree
-import com.dtolabs.rundeck.core.execution.ExecutionListener
 import groovy.transform.CompileStatic
 import java.nio.charset.StandardCharsets
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Created by luistoledo on 12/18/17.
  */
 @CompileStatic
 class GitPluginUtil {
+    private static final Logger logger = LoggerFactory.getLogger(GitPluginUtil.class)
     static Map<String, Object> getRenderOpt(String value, boolean secondary, boolean password = false, boolean storagePassword = false, boolean storageKey = false) {
         Map<String, Object> ret = new HashMap<>();
         ret.put(StringRenderingConstants.GROUP_NAME,value);
@@ -81,21 +83,17 @@ class GitPluginUtil {
         KeyStorageTree storageTree = (KeyStorageTree)context.getStorageTree()
 
         if (storageTree == null){
-            ExecutionListener logger = context.getExecutionListener()
-            if (logger != null) {
-                logger.log(1, "storageTree is null. Cannot retrieve credential from Key Storage.");
-            }
+            logger.warn("storageTree is null. Cannot retrieve credential from Key Storage at path '{}'.", path)
             return null
         }
 
         try {
             ResourceMeta contents = storageTree.getResource(path).getContents();
-            return readResourceMetaAsString(contents);
+            String result = readResourceMetaAsString(contents);
+            logger.debug("Successfully retrieved credential from Key Storage at path '{}' ({} chars)", path, result?.length())
+            return result
         } catch (Exception e) {
-            ExecutionListener logger = context.getExecutionListener()
-            if (logger != null) {
-                logger.log(1, "Failed to retrieve credential from Key Storage at path '${path}': ${e.message}");
-            }
+            logger.warn("Failed to retrieve credential from Key Storage at path '{}': {}", path, e.message)
             return null
         }
     }

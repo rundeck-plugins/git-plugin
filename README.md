@@ -144,6 +144,12 @@ keys/shared/git-readonly-key    # Shared read-only access key
 - For GitHub/GitLab, ensure the public key is added to your account
 - Try with `Strict Host Key Checking = no` for initial testing
 
+**Problem: "You're using an RSA key with SHA-1, which is no longer allowed" (GitHub)**
+- This plugin supports modern SSH algorithms including RSA with SHA-2 (`rsa-sha2-256`, `rsa-sha2-512`)
+- Your existing RSA keys will work - the plugin automatically uses SHA-2 signatures with Apache MINA SSHD
+- Alternatively, generate a more modern key type: `ssh-keygen -t ed25519 -C "rundeck@example.com"`
+- Supported key types: RSA (with SHA-2), Ed25519, ECDSA
+
 **Problem: Key Storage path not found**
 - Key Storage paths should start with `keys/` (e.g., `keys/git/password`)
 - Use the Key Storage browser in the UI to select the correct path
