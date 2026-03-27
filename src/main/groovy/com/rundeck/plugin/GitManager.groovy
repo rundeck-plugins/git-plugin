@@ -15,7 +15,6 @@ import org.eclipse.jgit.util.FileUtils
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 /**
@@ -26,6 +25,51 @@ class GitManager {
     private static final Logger logger = LoggerFactory.getLogger(GitManager.class);
 
     public static final String REMOTE_NAME = "origin"
+
+    /**
+     * Executes a closure with the thread context classloader set to the plugin's classloader.
+     * Required because Rundeck isolates plugins with separate classloaders, and JGit's
+     * TranslationBundle mechanism uses ResourceBundle.getBundle() which relies on the
+     * thread context classloader to find resource bundles like SshdText.
+     * Also ensures Ed25519 key support works correctly on Java 15+.
+     */
+    private static <T> T withPluginClassLoader(Closure<T> closure) {
+        ClassLoader original = Thread.currentThread().getContextClassLoader()
+        try {
+            Thread.currentThread().setContextClassLoader(GitManager.class.getClassLoader())
+            ensureEdDSASupport()
+            return closure.call()
+        } finally {
+            Thread.currentThread().setContextClassLoader(original)
+        }
+    }
+
+    private static volatile boolean eddsaChecked = false
+
+    /**
+     * Ensures Ed25519 key support works correctly by removing the external EdDSA provider
+     * if present. On Java 15+, Ed25519 is supported natively by the JDK. The external
+     * net.i2p.crypto.eddsa provider causes ClassNotFoundException due to Rundeck's plugin
+     * classloader isolation, so it must be removed to let SSHD use native support.
+     */
+    private static void ensureEdDSASupport() {
+        if (eddsaChecked) return
+        try {
+            int javaVersion = Runtime.version().feature()
+            if (javaVersion >= 15) {
+                if (java.security.Security.getProvider("EdDSA") != null) {
+                    java.security.Security.removeProvider("EdDSA")
+                    logger.info("Removed external EdDSA provider to use native Java {} Ed25519 support", javaVersion)
+                }
+            } else {
+                logger.info("Java {} does not have native Ed25519 support. Ed25519 keys require Java 15+.", javaVersion)
+            }
+            eddsaChecked = true
+        } catch (Exception e) {
+            logger.warn("EdDSA provider check failed: {}", e.message)
+        }
+    }
+
     Git git
     String branch
     String fileName
@@ -134,7 +178,7 @@ class GitManager {
 
         try {
             setupTransportAuthentication(sshConfig, cloneCommand, this.gitURL)
-            git = cloneCommand.call()
+            git = withPluginClassLoader { cloneCommand.call() }
         } catch (Exception e) {
             e.printStackTrace()
             logger.debug("Failed cloning the repository from ${this.gitURL}: ${e.message}", e)
@@ -151,7 +195,7 @@ class GitManager {
 
         try {
             setupTransportAuthentication(sshConfig, pullCommand, this.gitURL)
-            PullResult result = pullCommand.call()
+            PullResult result = withPluginClassLoader { pullCommand.call() }
             if (!result.isSuccessful()) {
                 logger.info("Pull is not successful.")
             } else {
@@ -171,7 +215,7 @@ class GitManager {
 
         try {
             setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
-            pushCommand.call()
+            withPluginClassLoader { pushCommand.call() }
             logger.info("Push is not successful.")
         } catch (Exception e) {
             e.printStackTrace()
@@ -222,17 +266,17 @@ class GitManager {
         }
 
         URIish u = new URIish(url);
-        logger.debug("transport url ${u}, scheme ${u.scheme}, user ${u.user}")
+        logger.debug("setupTransportAuth: url={}, scheme={}, user={}", u, u.scheme, u.user)
         if ((u.scheme == null || u.scheme == 'ssh') && u.user && (sshPrivateKeyPath || sshPrivateKey)) {
 
             byte[] keyData
             if (sshPrivateKeyPath) {
-                logger.debug("using ssh private key path ${sshPrivateKeyPath}")
+                logger.debug("Using SSH private key from filesystem path")
                 Path path = Paths.get(sshPrivateKeyPath);
                 keyData = Files.readAllBytes(path);
 
             } else if (sshPrivateKey) {
-                logger.debug("using ssh private key")
+                logger.debug("Using SSH private key from Key Storage")
                 keyData = sshPrivateKey.getBytes()
             }
 
@@ -251,7 +295,7 @@ class GitManager {
     PullResult gitPull(Git git1 = null) {
         def pullCommand = (git1 ?: git).pull().setRemote(REMOTE_NAME).setRemoteBranchName(branch)
         setupTransportAuthentication(sshConfig, pullCommand)
-        pullCommand.call()
+        withPluginClassLoader { pullCommand.call() }
     }
 
     def gitCommitAndPush() {
@@ -277,7 +321,7 @@ class GitManager {
 
         def push
         try {
-            push = pushb.call()
+            push = withPluginClassLoader { pushb.call() }
         } catch (Exception e) {
             logger.debug("Failed push to remote: ${e.message}", e)
             throw new Exception("Failed push to remote: ${e.message}", e)

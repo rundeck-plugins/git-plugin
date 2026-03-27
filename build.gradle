@@ -61,13 +61,11 @@ dependencies {
 
     pluginLibs(libs.jgit) {
         exclude module: 'slf4j-api'
-        exclude module: 'jsch'
         exclude module: 'commons-logging'
     }
 
-    pluginLibs(libs.jgitSsh) {
+    pluginLibs(libs.jgitSshApache) {
         exclude module: 'slf4j-api'
-        exclude group: 'org.bouncycastle'
     }
 
     testImplementation libs.bundles.testLibs
