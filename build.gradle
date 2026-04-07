@@ -4,7 +4,7 @@ plugins {
     id 'java'
 }
 
-group 'com.rundeck.plugins'
+group 'org.rundeck.plugins'
 
 ext.rundeckPluginVersion = '1.2'
 ext.publishName = "Git Plugin ${project.version}"
@@ -53,7 +53,8 @@ configurations {
 dependencies {
     // Use catalog aliases for dependencies
     implementation(libs.groovyAll)
-    implementation(libs.rundeckCore)
+    compileOnly(libs.rundeckCore)
+    testImplementation(libs.rundeckCore)
     implementation(libs.slf4jApi)
     
     // Add secure commons-lang3 to provide alternative to vulnerable commons-lang 2.6
@@ -114,7 +115,7 @@ jar {
 }
 
 nexusPublishing {
-    packageGroup = 'com.rundeck.plugins'
+    packageGroup = 'org.rundeck.plugins'
     repositories {
         sonatype()
     }
