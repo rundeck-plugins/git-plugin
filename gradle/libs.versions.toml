@@ -3,7 +3,7 @@
 axionRelease = "1.18.18"
 nexusPublish = "1.3.0"
 # Libraries
-groovy = "3.0.22"
+groovy = "4.0.29"
 junit = "4.13.2"
 rundeckCore = "5.16.0-20251006"
 slf4j = "1.7.36"
