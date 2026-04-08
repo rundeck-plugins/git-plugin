@@ -5,13 +5,13 @@ nexusPublish = "1.3.0"
 # Libraries
 groovy = "4.0.29"
 junit = "4.13.2"
-rundeckCore = "5.16.0-20251006"
+rundeckCore = "6.0.0-alpha1-20260407"
 slf4j = "1.7.36"
 jgit = "6.6.1.202309021850-r"
 jgitSshApache = "6.6.1.202309021850-r"
-spock = "2.0-groovy-3.0"
-cglib = "3.3.0"
-objenesis = "1.4"
+spock = "2.3-groovy-4.0"
+bytebuddy = "1.14.11"
+objenesis = "3.3"
 # Security overrides for transitive dependencies
 okhttp3 = "4.12.0"
 okio = "3.9.1"
@@ -25,12 +25,12 @@ slf4jApi    = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 jgit        = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }
 jgitSshApache = { group = "org.eclipse.jgit", name = "org.eclipse.jgit.ssh.apache", version.ref = "jgitSshApache" }
 spockCore   = { group = "org.spockframework", name = "spock-core", version.ref = "spock" }
-cglibNodep  = { group = "cglib", name = "cglib-nodep", version.ref = "cglib" }
+bytebuddy   = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
 objenesis   = { group = "org.objenesis", name = "objenesis", version.ref = "objenesis" }
 commonsLang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commonsLang3" }
 
 [bundles]
-testLibs = ["junit", "groovyAll", "spockCore", "cglibNodep", "objenesis"]
+testLibs = ["junit", "groovyAll", "spockCore", "bytebuddy", "objenesis"]
 
 [plugins]
 axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axionRelease" }
