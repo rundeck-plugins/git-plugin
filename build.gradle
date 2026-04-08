@@ -4,7 +4,7 @@ plugins {
     id 'java'
 }
 
-group 'com.rundeck'
+group 'org.rundeck.plugins'
 
 ext.rundeckPluginVersion = '1.2'
 ext.publishName = "Git Plugin ${project.version}"
@@ -18,19 +18,19 @@ ext.developers = [
 
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
     withJavadocJar()
     withSourcesJar()
 }
 
 scmVersion {
-    ignoreUncommittedChanges = true
+    ignoreUncommittedChanges = false
     tag {
-        prefix = ''
+        prefix = ''           // NO "v" prefix - see PLUGIN_TAGGING_ARCHITECTURE.md
         versionSeparator = ''
     }
-    versionCreator("simple")
+    versionCreator 'simple'  // Use simple version creator (just tag name)
 }
 project.version = scmVersion.version
 
@@ -53,7 +53,8 @@ configurations {
 dependencies {
     // Use catalog aliases for dependencies
     implementation(libs.groovyAll)
-    implementation(libs.rundeckCore)
+    compileOnly(libs.rundeckCore)
+    testImplementation(libs.rundeckCore)
     implementation(libs.slf4jApi)
     
     // Add secure commons-lang3 to provide alternative to vulnerable commons-lang 2.6
@@ -122,6 +123,26 @@ nexusPublishing {
 
 test {
     useJUnitPlatform()
+    // Java 17 requires these for cglib/Spock mocking
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED'
 }
 
 apply from: "${rootDir}/gradle/publishing.gradle"
+
+// Add PackageCloud repository
+publishing {
+    repositories {
+        maven {
+            name = "PackageCloudTest"
+            url = uri("https://packagecloud.io/pagerduty/rundeckpro-test/maven2")
+            authentication {
+                header(HttpHeaderAuthentication)
+            }
+            credentials(HttpHeaderCredentials) {
+                name = "Authorization"
+                value = "Bearer " + (System.getenv("PKGCLD_WRITE_TOKEN") ?: project.findProperty("pkgcldWriteToken"))
+            }
+        }
+    }
+}
