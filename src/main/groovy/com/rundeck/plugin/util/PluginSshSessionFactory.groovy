@@ -15,10 +15,14 @@ import java.security.PublicKey
 /**
  * SSH session factory using Apache MINA SSHD instead of JSch.
  * Provides support for modern SSH algorithms including RSA with SHA-2 signatures.
+ *
+ * Implements {@link Closeable} so callers can shut down the internal SSHD client
+ * and clean up temporary key files after a transport operation completes.
  */
-class PluginSshSessionFactory implements TransportConfigCallback {
+class PluginSshSessionFactory implements TransportConfigCallback, Closeable {
     private byte[] privateKey
     Map<String, String> sshConfig
+    private CustomSshdSessionFactory sessionFactory
 
     PluginSshSessionFactory(final byte[] privateKey) {
         this.privateKey = privateKey
@@ -28,12 +32,23 @@ class PluginSshSessionFactory implements TransportConfigCallback {
     void configure(final Transport transport) {
         if (transport in SshTransport) {
             SshTransport sshTransport = (SshTransport) transport
-            sshTransport.setSshSessionFactory(buildSessionFactory())
+            if (sessionFactory == null) {
+                sessionFactory = new CustomSshdSessionFactory(privateKey, sshConfig)
+            }
+            sshTransport.setSshSessionFactory(sessionFactory)
         }
     }
 
-    private SshdSessionFactory buildSessionFactory() {
-        return new CustomSshdSessionFactory(privateKey, sshConfig)
+    @Override
+    void close() {
+        if (sessionFactory != null) {
+            try {
+                sessionFactory.close()
+            } catch (Exception ignored) {
+            }
+            sessionFactory.deleteTempKey()
+            sessionFactory = null
+        }
     }
 
     private static class CustomSshdSessionFactory extends SshdSessionFactory {
@@ -45,6 +60,16 @@ class PluginSshSessionFactory implements TransportConfigCallback {
             super(null, null)
             this.privateKey = privateKey
             this.sshConfig = sshConfig
+        }
+
+        void deleteTempKey() {
+            if (cachedKeyFile != null) {
+                try {
+                    Files.deleteIfExists(cachedKeyFile)
+                } catch (Exception ignored) {
+                }
+                cachedKeyFile = null
+            }
         }
 
         @Override
