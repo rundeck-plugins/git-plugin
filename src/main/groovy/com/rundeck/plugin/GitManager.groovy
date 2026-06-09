@@ -224,8 +224,14 @@ class GitManager {
         PluginSshSessionFactory sshFactory = null
         try {
             sshFactory = setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
-            withPluginClassLoader { pushCommand.call() }
-            logger.info("Push is not successful.")
+            def results = withPluginClassLoader { pushCommand.call() }
+            def updates = results.collectMany { it.remoteUpdates ?: [] }
+            def failed = updates.findAll { it.status != RemoteRefUpdate.Status.OK }
+            if (failed) {
+                logger.info("Push had failed updates: {}", failed)
+            } else {
+                logger.debug("Push successful.")
+            }
         } catch (Exception e) {
             e.printStackTrace()
             logger.debug("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
