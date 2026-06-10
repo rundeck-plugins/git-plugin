@@ -66,7 +66,8 @@ class PluginSshSessionFactory implements TransportConfigCallback, Closeable {
             if (cachedKeyFile != null) {
                 try {
                     Files.deleteIfExists(cachedKeyFile)
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    org.slf4j.LoggerFactory.getLogger(CustomSshdSessionFactory).warn("Failed to delete temporary SSH key file {}: {}", cachedKeyFile, e.message, e)
                 }
                 cachedKeyFile = null
             }
