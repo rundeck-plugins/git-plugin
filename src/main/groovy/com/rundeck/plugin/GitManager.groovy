@@ -226,7 +226,7 @@ class GitManager {
             sshFactory = setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
             def results = withPluginClassLoader { pushCommand.call() }
             def updates = results.collectMany { it.remoteUpdates ?: [] }
-            def failed = updates.findAll { it.status != RemoteRefUpdate.Status.OK }
+            def failed = updates.findAll { !(it.status in [RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE]) }
             if (failed) {
                 logger.info("Push had failed updates: {}", failed)
             } else {
