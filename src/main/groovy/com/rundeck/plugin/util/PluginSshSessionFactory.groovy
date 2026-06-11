@@ -44,7 +44,8 @@ class PluginSshSessionFactory implements TransportConfigCallback, Closeable {
         if (sessionFactory != null) {
             try {
                 sessionFactory.close()
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(PluginSshSessionFactory).debug("Failed to close SSH session factory: {}", e.message, e)
             }
             sessionFactory.deleteTempKey()
             sessionFactory = null
