@@ -120,7 +120,10 @@ class GitPluginUtil {
         if (name.endsWith('.git')) {
             name = name.substring(0, name.length() - 4)
         }
-        return name ?: null
+        if (!name || name == '.' || name == '..' || name.contains('/') || name.contains('\\')) {
+            return null
+        }
+        return name
     }
 
     /**
@@ -171,7 +174,7 @@ class GitPluginUtil {
                     bundle.addSecret(path, baos.toByteArray())
                 }
             } catch (Exception e) {
-                logger.error("Failed to prepare secret bundle for key path '{}': {}", path, e.message)
+                logger.error("Failed to prepare secret bundle for key path '{}': {}", path, e.message, e)
             }
         }
         return bundle
