@@ -16,13 +16,17 @@ class GitPluginUtilExtractRepoNameSpec extends Specification {
         'https://github.com/user/my-repo'                       | 'my-repo'
         'https://github.com/user/my-repo.git/'                  | 'my-repo'
         'ssh://git@github.com/user/my-repo.git'                 | 'my-repo'
-        'ssh://git@host.xz:2222/path/to/repo.git'              | 'repo'
+        'ssh://git@host.xz:2222/path/to/repo.git'               | 'repo'
         'git://host.xz/path/to/repo.git/'                       | 'repo'
-        'git@github.com:user/my-repo.git'                        | 'my-repo'
-        'git@github.com:org/sub-project.git'                     | 'sub-project'
-        'https://example.com/repo'                               | 'repo'
+        'git@github.com:user/my-repo.git'                       | 'my-repo'
+        'git@github.com:org/sub-project.git'                    | 'sub-project'
+        'https://example.com/repo'                              | 'repo'
         'ftp://host.xz/path/to/repo.git'                        | 'repo'
-        null                                                     | null
-        ''                                                       | null
+        '.'                                                     | null
+        '..'                                                    | null
+        'repo:foo/bar'                                          | null
+        'repo:foo\\bar'                                        | null
+        null                                                    | null
+        ''                                                      | null
     }
 }
