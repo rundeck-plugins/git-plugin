@@ -110,21 +110,36 @@ class GitPluginUtil {
      * @param gitUrl the Git remote URL
      * @return the repository name, or {@code null} if it cannot be determined
      */
-    static String extractRepoName(String gitUrl) {
-        if (!gitUrl) return null
-        String cleaned = gitUrl.replaceAll('/+$', '')
-        int lastSlash = cleaned.lastIndexOf('/')
-        int lastColon = cleaned.lastIndexOf(':')
-        int lastSep = Math.max(lastSlash, lastColon)
-        String name = lastSep >= 0 ? cleaned.substring(lastSep + 1) : cleaned
-        if (name.endsWith('.git')) {
-            name = name.substring(0, name.length() - 4)
+static String extractRepoName(String gitUrl) {
+    if (!gitUrl) return null
+
+    String cleaned = gitUrl.replaceAll('/+$', '')
+    String pathPart = cleaned
+
+    if (cleaned.contains('://')) {
+        try {
+            pathPart = new java.net.URI(cleaned).getPath()
+        } catch (Exception ignored) {
+            // fall through to the heuristics below
         }
-        if (!name || name == '.' || name == '..' || name.contains('/') || name.contains('\\')) {
-            return null
-        }
-        return name
+    } else if (cleaned ==~ /.+@[^:]+:.+/) {
+        // SCP-style: git@host:org/repo(.git)
+        pathPart = cleaned.substring(cleaned.indexOf(':') + 1)
+    } else if (cleaned.contains(':')) {
+        // Reject other colon-based formats like "repo:foo/bar"
+        return null
     }
+
+    if (!pathPart) return null
+    String name = pathPart.tokenize('/').last()
+    if (name.endsWith('.git')) {
+        name = name.substring(0, name.length() - 4)
+    }
+    if (!name || name == '.' || name == '..' || name.contains('/') || name.contains('\\')) {
+        return null
+    }
+    return name
+}
 
     /**
      * Collects key storage paths from the step configuration for the given property keys.
