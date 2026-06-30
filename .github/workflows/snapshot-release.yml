@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - master # Trigger on commits to the master branch
+      - main # Trigger on commits to the main branch
     tags-ignore:
       - '*' # Exclude all pushes that are tags
 
