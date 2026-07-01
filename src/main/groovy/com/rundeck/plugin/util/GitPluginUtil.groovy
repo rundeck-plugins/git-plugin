@@ -1,5 +1,8 @@
 package com.rundeck.plugin.util
 
+import com.dtolabs.rundeck.core.dispatcher.DataContextUtils
+import com.dtolabs.rundeck.core.execution.proxy.DefaultSecretBundle
+import com.dtolabs.rundeck.core.execution.proxy.SecretBundle
 import com.dtolabs.rundeck.core.plugins.configuration.StringRenderingConstants
 import com.dtolabs.rundeck.core.storage.ResourceMeta
 import com.dtolabs.rundeck.plugins.step.PluginStepContext
@@ -96,5 +99,99 @@ class GitPluginUtil {
             logger.warn("Failed to retrieve credential from Key Storage at path '{}': {}", path, e.message)
             return null
         }
+    }
+
+    /**
+     * Extracts the repository name from a Git URL by taking the last path segment
+     * and stripping the {@code .git} suffix if present.
+     * <p>Handles standard URL formats as well as SCP-style notation
+     * ({@code git@host:user/repo.git}).</p>
+     *
+     * @param gitUrl the Git remote URL
+     * @return the repository name, or {@code null} if it cannot be determined
+     */
+static String extractRepoName(String gitUrl) {
+    if (!gitUrl) return null
+
+    String cleaned = gitUrl.replaceAll('/+$', '')
+    String pathPart = cleaned
+
+    if (cleaned.contains('://')) {
+        try {
+            pathPart = new java.net.URI(cleaned).getPath()
+        } catch (Exception ignored) {
+            // fall through to the heuristics below
+        }
+    } else if (cleaned ==~ /.+@[^:]+:.+/) {
+        // SCP-style: git@host:org/repo(.git)
+        pathPart = cleaned.substring(cleaned.indexOf(':') + 1)
+    } else if (cleaned.contains(':')) {
+        // Reject other colon-based formats like "repo:foo/bar"
+        return null
+    }
+
+    if (!pathPart) return null
+    String name = pathPart.tokenize('/').last()
+    if (name.endsWith('.git')) {
+        name = name.substring(0, name.length() - 4)
+    }
+    if (!name || name == '.' || name == '..' || name.contains('/') || name.contains('\\')) {
+        return null
+    }
+    return name
+}
+
+    /**
+     * Collects key storage paths from the step configuration for the given property keys.
+     * Resolves data references (e.g. ${option.path}) using the execution context before
+     * extracting paths. Used by ProxyRunnerPlugin/ProxySecretBundleCreator to tell the
+     * Rundeck server which secrets a runner needs.
+     *
+     * @param context       the Rundeck execution context
+     * @param configuration the step configuration map
+     * @param storageKeys   configuration property names that hold key storage paths
+     * @return list of resolved key storage paths (never null)
+     */
+    static List<String> listSecretsPathForStep(ExecutionContext context, Map<String, Object> configuration, String... storageKeys) {
+        Map<String, Object> resolved = DataContextUtils.replaceDataReferences(
+                (Map<String, Object>) configuration,
+                context.getDataContext()
+        )
+        List<String> paths = []
+        for (String key : storageKeys) {
+            def value = resolved.get(key)
+            if (value) {
+                paths.add((String) value)
+            }
+        }
+        return paths
+    }
+
+    /**
+     * Creates a SecretBundle containing the secrets at the key storage paths found in the
+     * step configuration. The server calls this before dispatching work to a Rundeck Runner
+     * so the runner's AuthorizedSecretStorage can authorize access to these paths.
+     *
+     * @param context       the Rundeck execution context (server-side, with full storage access)
+     * @param configuration the step configuration map
+     * @param storageKeys   configuration property names that hold key storage paths
+     * @return a SecretBundle with the secret values keyed by their storage paths
+     */
+    static SecretBundle prepareSecretBundleForStep(ExecutionContext context, Map<String, Object> configuration, String... storageKeys) {
+        List<String> paths = listSecretsPathForStep(context, configuration, storageKeys)
+        DefaultSecretBundle bundle = new DefaultSecretBundle()
+        for (String path : paths) {
+            try {
+                def resource = context.getStorageTree().getResource(path)
+                if (resource != null) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream()
+                    resource.getContents().writeContent(baos)
+                    bundle.addSecret(path, baos.toByteArray())
+                }
+            } catch (Exception e) {
+                logger.error("Failed to prepare secret bundle for key path '{}': {}", path, e.message, e)
+            }
+        }
+        return bundle
     }
 }
