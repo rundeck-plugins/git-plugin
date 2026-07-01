@@ -224,9 +224,10 @@ class PluginSshSessionFactorySpec extends Specification {
         db != null
     }
 
-    def "each call to configure creates a fresh session factory with current sshConfig"() {
+    def "multiple configure calls reuse same session factory"() {
         given:
         def factory = new PluginSshSessionFactory(FAKE_KEY)
+        factory.sshConfig = [StrictHostKeyChecking: 'no']
 
         SshdSessionFactory first = null
         SshdSessionFactory second = null
@@ -238,9 +239,77 @@ class PluginSshSessionFactorySpec extends Specification {
         }
 
         when:
-        factory.sshConfig = [StrictHostKeyChecking: 'yes']
         factory.configure(sshTransport)
-        factory.sshConfig = [StrictHostKeyChecking: 'no']
+        factory.configure(sshTransport)
+
+        then:
+        first != null
+        second != null
+        first.is(second)
+    }
+
+    def "close shuts down session factory and is idempotent"() {
+        given:
+        def factory = new PluginSshSessionFactory(FAKE_KEY)
+        factory.sshConfig = [:]
+
+        SshdSessionFactory captured = null
+        def sshTransport = Mock(SshTransport) {
+            setSshSessionFactory(_) >> { args -> captured = args[0] }
+        }
+        factory.configure(sshTransport)
+
+        when:
+        factory.close()
+        factory.close()
+
+        then:
+        notThrown(Exception)
+    }
+
+    def "close deletes temp key file"() {
+        given:
+        def factory = new PluginSshSessionFactory(FAKE_KEY)
+        factory.sshConfig = [:]
+
+        SshdSessionFactory captured = null
+        def sshTransport = Mock(SshTransport) {
+            setSshSessionFactory(_) >> { args -> captured = args[0] }
+        }
+        factory.configure(sshTransport)
+
+        def identities = captured.getDefaultIdentities(new File(System.getProperty("java.io.tmpdir")))
+        def keyFile = identities[0]
+
+        expect:
+        Files.exists(keyFile)
+
+        when:
+        factory.close()
+
+        then:
+        !Files.exists(keyFile)
+    }
+
+    def "configure after close creates new session factory"() {
+        given:
+        def factory = new PluginSshSessionFactory(FAKE_KEY)
+        factory.sshConfig = [:]
+
+        SshdSessionFactory first = null
+        SshdSessionFactory second = null
+        def callCount = 0
+        def sshTransport = Mock(SshTransport) {
+            setSshSessionFactory(_) >> { args ->
+                if (callCount == 0) first = args[0]
+                else second = args[0]
+                callCount++
+            }
+        }
+
+        when:
+        factory.configure(sshTransport)
+        factory.close()
         factory.configure(sshTransport)
 
         then:

@@ -1,6 +1,10 @@
 package com.rundeck.plugin
 
 import com.dtolabs.rundeck.core.execution.ExecutionListener
+import com.dtolabs.rundeck.core.execution.ExecutionContext
+import com.dtolabs.rundeck.core.execution.proxy.ProxyRunnerPlugin
+import com.dtolabs.rundeck.core.execution.proxy.ProxySecretBundleCreator
+import com.dtolabs.rundeck.core.execution.proxy.SecretBundle
 import com.dtolabs.rundeck.core.execution.workflow.steps.StepException
 import com.dtolabs.rundeck.core.plugins.Plugin
 import com.dtolabs.rundeck.core.plugins.configuration.Describable
@@ -21,7 +25,7 @@ import groovy.json.JsonOutput
 
 @Plugin(name = GitCloneWorkflowStep.PROVIDER_NAME, service = ServiceNameConstants.WorkflowStep)
 @PluginDescription(title = GitCloneWorkflowStep.PROVIDER_TITLE, description = GitCloneWorkflowStep.PROVIDER_DESCRIPTION)
-class GitCloneWorkflowStep implements StepPlugin, Describable{
+class GitCloneWorkflowStep implements StepPlugin, Describable, ProxyRunnerPlugin, ProxySecretBundleCreator{
     public static final String PROVIDER_NAME = "git-clone-step"
     public static final String PROVIDER_TITLE = "Git / Clone"
     public static final String PROVIDER_DESCRIPTION ="Clone a Git repository on Rundeck server"
@@ -34,6 +38,7 @@ class GitCloneWorkflowStep implements StepPlugin, Describable{
     public final static String GIT_KEY_STORAGE="gitKeyPath"
     public final static String GIT_PASSWORD_STORAGE="gitPasswordPath"
     public final static String GIT_PROJECT_BASED_SUBDIRECTORY="gitUseProjectBasedSubdirectory"
+    public final static String GIT_REPO_NAME_SUBDIRECTORY="gitUseRepoNameSubdirectory"
 
 
     final static Map<String, Object> renderingOptionsAuthentication = GitPluginUtil.getRenderOpt("Authentication", false)
@@ -74,6 +79,8 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
                                                                                      null,null,null, renderingOptionsAuthenticationKey))
     .property(PropertyUtil.bool(GIT_PROJECT_BASED_SUBDIRECTORY, "Use per-project subdirectories", "Check repositories out in project-based subdirectories of the Rundeck home directory.",
     false, "false", PropertyScope.Project, renderingOptionsConfig))
+    .property(PropertyUtil.bool(GIT_REPO_NAME_SUBDIRECTORY, "Clone into repo name subdirectory", "Clone into a subdirectory named after the Git repository under the base directory.",
+    false, "false", null, renderingOptionsConfig))
                                                        .build()
 
     GitCloneWorkflowStep() {
@@ -102,6 +109,13 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
             localPath = localPath_p.toString()
         } else {
             localPath = configuration.get(GIT_BASE_DIRECTORY)
+        }
+
+        if (Boolean.parseBoolean((String) configuration.get(GIT_REPO_NAME_SUBDIRECTORY))) {
+            String repoName = GitPluginUtil.extractRepoName((String) configuration.get(GIT_URL))
+            if (repoName) {
+                localPath = new File(localPath, repoName).getPath()
+            }
         }
 
         if(configuration.get(GIT_PASSWORD_STORAGE)){
@@ -145,5 +159,15 @@ If `yes`, require remote host SSH key is defined in the `~/.ssh/known_hosts` fil
 
 
 
+    }
+
+    @Override
+    List<String> listSecretsPathWorkflowStep(ExecutionContext context, Map<String, Object> configuration) {
+        return GitPluginUtil.listSecretsPathForStep(context, configuration, GIT_PASSWORD_STORAGE, GIT_KEY_STORAGE)
+    }
+
+    @Override
+    SecretBundle prepareSecretBundleWorkflowStep(ExecutionContext context, Map<String, Object> configuration) {
+        return GitPluginUtil.prepareSecretBundleForStep(context, configuration, GIT_PASSWORD_STORAGE, GIT_KEY_STORAGE)
     }
 }

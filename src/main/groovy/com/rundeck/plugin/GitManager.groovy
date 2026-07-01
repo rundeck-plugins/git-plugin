@@ -3,6 +3,7 @@ package com.rundeck.plugin
 import com.rundeck.plugin.util.PluginSshSessionFactory
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.PullResult
+import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.transport.PushResult
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.lib.Repository
@@ -115,6 +116,8 @@ class GitManager {
                 logger.debug("branch differs, re-cloning")
                 needsClone = true
             } else {
+                agit.reset().setMode(ResetCommand.ResetType.HARD).call()
+                agit.clean().setCleanDirectories(true).setForce(true).call()
                 performPull(agit)
             }
 
@@ -175,14 +178,16 @@ class GitManager {
                 setURI(this.gitURL).
                 setCloneSubmodules(true)
 
-
+        PluginSshSessionFactory sshFactory = null
         try {
-            setupTransportAuthentication(sshConfig, cloneCommand, this.gitURL)
+            sshFactory = setupTransportAuthentication(sshConfig, cloneCommand, this.gitURL)
             git = withPluginClassLoader { cloneCommand.call() }
         } catch (Exception e) {
             e.printStackTrace()
             logger.debug("Failed cloning the repository from ${this.gitURL}: ${e.message}", e)
             throw new Exception("Failed cloning the repository from ${this.gitURL}: ${e.message}", e)
+        } finally {
+            sshFactory?.close()
         }
         repo = git.getRepository()
     }
@@ -193,8 +198,9 @@ class GitManager {
         def pullCommand = git.pull()
                 .setRebase(true)
 
+        PluginSshSessionFactory sshFactory = null
         try {
-            setupTransportAuthentication(sshConfig, pullCommand, this.gitURL)
+            sshFactory = setupTransportAuthentication(sshConfig, pullCommand, this.gitURL)
             PullResult result = withPluginClassLoader { pullCommand.call() }
             if (!result.isSuccessful()) {
                 logger.info("Pull is not successful.")
@@ -205,6 +211,8 @@ class GitManager {
             e.printStackTrace()
             logger.debug("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
             throw new Exception("Failed pulling the repository from ${this.gitURL}: ${e.message}", e)
+        } finally {
+            sshFactory?.close()
         }
         repo = git.getRepository()
     }
@@ -213,14 +221,23 @@ class GitManager {
         def pushCommand = git.push()
                 .setPushAll()
 
+        PluginSshSessionFactory sshFactory = null
         try {
-            setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
-            withPluginClassLoader { pushCommand.call() }
-            logger.info("Push is not successful.")
+            sshFactory = setupTransportAuthentication(sshConfig, pushCommand, this.gitURL)
+            def results = withPluginClassLoader { pushCommand.call() }
+            def updates = results.collectMany { it.remoteUpdates ?: [] }
+            def failed = updates.findAll { !(it.status in [RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE]) }
+            if (failed) {
+                throw new Exception("Push had failed updates: ${failed}")
+            } else {
+                logger.debug("Push successful.")
+            }
         } catch (Exception e) {
             e.printStackTrace()
             logger.debug("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
             throw new Exception("Failed pushing the repository to ${this.gitURL}: ${e.message}", e)
+        } finally {
+            sshFactory?.close()
         }
     }
 
@@ -254,7 +271,7 @@ class GitManager {
         }
     }
 
-    void setupTransportAuthentication(
+    PluginSshSessionFactory setupTransportAuthentication(
             Map<String, String> sshConfig,
             TransportCommand command,
             String url = null) throws Exception {
@@ -283,6 +300,7 @@ class GitManager {
             def factory = new PluginSshSessionFactory(keyData)
             factory.sshConfig = sshConfig
             command.setTransportConfigCallback(factory)
+            return factory
         } else if (u.user && gitPassword) {
             logger.debug("using password")
 
@@ -290,12 +308,17 @@ class GitManager {
                 command.setCredentialsProvider(new UsernamePasswordCredentialsProvider(u.user, gitPassword))
             }
         }
+        return null
     }
 
     PullResult gitPull(Git git1 = null) {
         def pullCommand = (git1 ?: git).pull().setRemote(REMOTE_NAME).setRemoteBranchName(branch)
-        setupTransportAuthentication(sshConfig, pullCommand)
-        withPluginClassLoader { pullCommand.call() }
+        PluginSshSessionFactory sshFactory = setupTransportAuthentication(sshConfig, pullCommand)
+        try {
+            return withPluginClassLoader { pullCommand.call() }
+        } finally {
+            sshFactory?.close()
+        }
     }
 
     def gitCommitAndPush() {
@@ -317,7 +340,7 @@ class GitManager {
         def pushb = git.push()
         pushb.setRemote(REMOTE_NAME)
         pushb.add(branch)
-        setupTransportAuthentication(sshConfig, pushb)
+        PluginSshSessionFactory sshFactory = setupTransportAuthentication(sshConfig, pushb)
 
         def push
         try {
@@ -325,6 +348,8 @@ class GitManager {
         } catch (Exception e) {
             logger.debug("Failed push to remote: ${e.message}", e)
             throw new Exception("Failed push to remote: ${e.message}", e)
+        } finally {
+            sshFactory?.close()
         }
         def sb = new StringBuilder()
         def updates = (push*.remoteUpdates).flatten()
