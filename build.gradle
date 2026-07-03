@@ -39,6 +39,13 @@ apply plugin: 'java'
 
 repositories {
     mavenCentral()
+    maven {
+        name = 'Central Portal Snapshots'
+        url = 'https://central.sonatype.com/repository/maven-snapshots/'
+        content {
+            includeGroup('org.rundeck')
+        }
+    }
 }
 
 configurations {
