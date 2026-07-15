@@ -9,7 +9,7 @@ rundeckCore = "6.1.0-SNAPSHOT"
 slf4j = "1.7.36"
 jgit = "6.6.1.202309021850-r"
 jgitSshApache = "6.6.1.202309021850-r"
-spock = "2.3-groovy-4.0"
+spock = "2.4-groovy-5.0"
 bytebuddy = "1.14.11"
 objenesis = "3.3"
 # Security overrides for transitive dependencies
