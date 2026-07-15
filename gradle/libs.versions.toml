@@ -10,7 +10,7 @@ slf4j = "2.0.18"
 jgit = "6.6.1.202309021850-r"
 jgitSshApache = "6.10.1.202505221210-r"
 spock = "2.3-groovy-4.0"
-bytebuddy = "1.14.11"
+bytebuddy = "1.18.11"
 objenesis = "3.5"
 # Security overrides for transitive dependencies
 okhttp3 = "4.12.0"
