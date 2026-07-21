@@ -1,4 +1,13 @@
-# Git Plugin
+
+# This repository has been Archived
+
+This plugin is now bundled into the base Rundeck repo and this version of the plugin will no longer be maintained.
+
+July 21, 2026
+
+-----
+
+## Git Plugin
 
 This is a git plugin (based on [Jgit](https://www.eclipse.org/jgit/)) which contains a Resource model and workflow steps.
 
