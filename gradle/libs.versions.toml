@@ -1,7 +1,6 @@
 [versions]
 # Plugins
 axionRelease = "1.21.2"
-nexusPublish = "2.0.0"
 # Libraries
 groovy = "4.0.32"
 junit = "4.13.2"
@@ -34,4 +33,3 @@ testLibs = ["junit", "groovyAll", "spockCore", "bytebuddy", "objenesis"]
 
 [plugins]
 axionRelease = { id = "pl.allegro.tech.build.axion-release", version.ref = "axionRelease" }
-nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublish" }
