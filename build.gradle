@@ -89,7 +89,6 @@ configurations.all {
             substitute module('commons-lang:commons-lang') using module("org.apache.commons:commons-lang3:${libs.versions.commonsLang3.get()}")
         }
         
-        // Note: JGit vulnerabilities left as-is to avoid code breaking changes
     }
 }
 
