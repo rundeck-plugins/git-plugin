@@ -10,7 +10,7 @@ jgit = "7.7.1.202607240634-r"
 jgitSshApache = "7.7.1.202607240634-r"
 spock = "2.3-groovy-4.0"
 bytebuddy = "1.18.11"
-objenesis = "3.5"
+objenesis = "3.6"
 # Security overrides for transitive dependencies
 okhttp3 = "4.12.0"
 okio = "3.18.0"
