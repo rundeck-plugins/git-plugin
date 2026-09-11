@@ -4,7 +4,7 @@ axionRelease = "1.21.3"
 # Libraries
 groovy = "4.0.33"
 junit = "4.13.2"
-rundeckCore = "6.1.0-20260803"
+rundeckCore = "6.2.0-20260908"
 slf4j = "2.0.18"
 jgit = "7.7.1.202607240634-r"
 jgitSshApache = "7.7.1.202607240634-r"
