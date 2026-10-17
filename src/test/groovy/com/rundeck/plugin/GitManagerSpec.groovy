@@ -3,6 +3,7 @@ package com.rundeck.plugin
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.submodule.SubmoduleWalk
 import spock.lang.Specification
 import spock.lang.TempDir
 
@@ -33,8 +34,9 @@ class GitManagerSpec extends Specification {
         return source.commit().setMessage(content).setSign(false).call()
     }
 
-    private void tag(String name, boolean force = false) {
-        source.tag().setName(name).setAnnotated(false).setForceUpdate(force).call()
+    private void tag(String name, boolean force = false, boolean annotated = false) {
+        source.tag().setName(name).setAnnotated(annotated).setSigned(false)
+                .setMessage(annotated ? name : null).setForceUpdate(force).call()
     }
 
     private GitManager manager(String branchOrTag) {
@@ -64,10 +66,10 @@ class GitManagerSpec extends Specification {
         new File(checkout, 'resources.yaml').text == 'v1'
     }
 
-    def "a checked out tag is updated in place, and a moved tag is picked up"() {
+    def "a checked out tag is updated in place, and a moved tag is picked up (annotated: #annotated)"() {
         given:
         commitFile('v1')
-        tag('v1.0')
+        tag('v1.0', false, annotated)
         File checkout = new File(tmp, 'checkout')
         manager('v1.0').cloneOrCreate(checkout)
         File marker = new File(checkout, '.git/marker')
@@ -75,7 +77,7 @@ class GitManagerSpec extends Specification {
 
         and: "the tag is moved to a new commit"
         RevCommit moved = commitFile('v1 again')
-        tag('v1.0', true)
+        tag('v1.0', true, annotated)
 
         when:
         manager('v1.0').cloneOrCreate(checkout)
@@ -86,6 +88,64 @@ class GitManagerSpec extends Specification {
         and:
         head(checkout) == moved.name()
         new File(checkout, 'resources.yaml').text == 'v1 again'
+
+        where:
+        annotated << [false, true]
+    }
+
+    def "a branch with the same name as the checked out tag takes precedence once it exists"() {
+        given:
+        commitFile('tagged')
+        tag('release')
+        File checkout = new File(tmp, 'checkout')
+        manager('release').cloneOrCreate(checkout)
+
+        and: "the remote gains a branch with the tag's name"
+        source.branchCreate().setName('release').call()
+        source.checkout().setName('refs/heads/release').call()
+        RevCommit onBranch = commitFile('on the branch')
+
+        when:
+        manager('release').cloneOrCreate(checkout)
+
+        then: "as on a first clone, the branch is checked out"
+        Git.open(checkout).withCloseable { it.repository.fullBranch } == 'refs/heads/release'
+        head(checkout) == onBranch.name()
+    }
+
+    def "submodules follow a moved tag"() {
+        given: "a library repository used as a submodule"
+        File libDir = new File(tmp, 'lib')
+        Git lib = Git.init().setDirectory(libDir).setInitialBranch('main').call()
+        new File(libDir, 'lib.txt').text = 'lib v1'
+        lib.add().addFilepattern('lib.txt').call()
+        lib.commit().setMessage('lib v1').setSign(false).call()
+        source.submoduleAdd().setPath('lib').setURI('file://' + libDir.absolutePath).call().close()
+        commitFile('v1')
+        tag('v1.0')
+        File checkout = new File(tmp, 'checkout')
+        manager('v1.0').cloneOrCreate(checkout)
+
+        and: "the tag is moved to a commit that uses a newer library commit"
+        new File(libDir, 'lib.txt').text = 'lib v2'
+        lib.add().addFilepattern('lib.txt').call()
+        lib.commit().setMessage('lib v2').setSign(false).call()
+        SubmoduleWalk.getSubmoduleRepository(source.repository, 'lib').withCloseable { repo ->
+            Git.wrap(repo).pull().call()
+        }
+        source.add().addFilepattern('lib').call()
+        commitFile('v1 again')
+        tag('v1.0', true)
+
+        when:
+        manager('v1.0').cloneOrCreate(checkout)
+
+        then:
+        new File(checkout, 'resources.yaml').text == 'v1 again'
+        new File(checkout, 'lib/lib.txt').text == 'lib v2'
+
+        cleanup:
+        lib?.close()
     }
 
     def "a branch is still pulled"() {

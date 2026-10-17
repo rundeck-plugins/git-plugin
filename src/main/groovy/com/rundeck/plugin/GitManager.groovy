@@ -9,7 +9,10 @@ import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.lib.SubmoduleConfig
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.submodule.SubmoduleWalk
+import org.eclipse.jgit.transport.FetchResult
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.URIish
@@ -121,7 +124,10 @@ class GitManager {
                 // out its commit.
                 agit.reset().setMode(ResetCommand.ResetType.HARD).call()
                 agit.clean().setCleanDirectories(true).setForce(true).call()
-                performTagCheckout(agit)
+                if (!performTagCheckout(agit)) {
+                    logger.debug("remote now has a branch named ${branch}, re-cloning")
+                    needsClone = true
+                }
             } else if (agit.repository.getFullBranch() != "refs/heads/$branch") {
                 logger.debug("branch differs, re-cloning")
                 needsClone = true
@@ -187,23 +193,107 @@ class GitManager {
         return tagCommit != null && tagCommit == repository.resolve(Constants.HEAD)
     }
 
-    private void performTagCheckout(Git git) {
+    /**
+     * Fetches the tag again, in case it was moved, and checks out its commit
+     * and the submodules it uses. Returns false, without checking anything
+     * out, when the remote also has a branch with that name: as on clone, the
+     * branch takes precedence, so the caller clones again.
+     */
+    private boolean performTagCheckout(Git git) {
         String tagRef = Constants.R_TAGS + branch
+        // Submodules are updated below. A recursive fetch would ask each
+        // submodule's remote for this tag too, and fail.
         def fetchCommand = git.fetch()
                 .setRemote(REMOTE_NAME)
                 .setRefSpecs(new RefSpec("+${tagRef}:${tagRef}"))
+                .setRecurseSubmodules(SubmoduleConfig.FetchRecurseSubmodulesMode.NO)
 
         PluginSshSessionFactory sshFactory = null
         try {
             sshFactory = setupTransportAuthentication(sshConfig, fetchCommand, this.gitURL)
-            withPluginClassLoader { fetchCommand.call() }
+            FetchResult result = withPluginClassLoader { fetchCommand.call() }
+            if (result.getAdvertisedRef(Constants.R_HEADS + branch) != null) {
+                return false
+            }
             ObjectId commit = git.repository.resolve(tagRef + '^{commit}')
             git.checkout().setName(commit.name()).call()
+            updateSubmodules(git.repository)
+            return true
         } catch (Exception e) {
             logger.debug("Failed fetching tag ${branch} from ${this.gitURL}: ${e.message}", e)
             throw new Exception("Failed fetching tag ${branch} from ${this.gitURL}: ${e.message}", e)
         } finally {
             sshFactory?.close()
+        }
+    }
+
+    /**
+     * Brings the submodules of the checked out commit up to date, recursively,
+     * as the initial clone does with setCloneSubmodules(true).
+     */
+    private void updateSubmodules(Repository repository) {
+        Git git = Git.wrap(repository)
+        git.submoduleInit().call()
+        git.submoduleSync().call()
+        fetchMissingSubmoduleCommits(repository)
+        def updateCommand = git.submoduleUpdate()
+        PluginSshSessionFactory sshFactory = null
+        try {
+            sshFactory = setupTransportAuthentication(sshConfig, updateCommand, this.gitURL)
+            withPluginClassLoader { updateCommand.call() }
+        } finally {
+            sshFactory?.close()
+        }
+
+        SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)
+        try {
+            while (walk.next()) {
+                Repository submodule = walk.getRepository()
+                if (submodule != null) {
+                    try {
+                        updateSubmodules(submodule)
+                    } finally {
+                        submodule.close()
+                    }
+                }
+            }
+        } finally {
+            walk.close()
+        }
+    }
+
+    /**
+     * SubmoduleUpdateCommand clones submodules that are missing, but does not
+     * fetch into existing ones, so fetch those whose recorded commit is not
+     * there yet.
+     */
+    private void fetchMissingSubmoduleCommits(Repository repository) {
+        SubmoduleWalk walk = SubmoduleWalk.forIndex(repository)
+        try {
+            while (walk.next()) {
+                Repository submodule = walk.getRepository()
+                if (submodule == null) {
+                    continue
+                }
+                try {
+                    if (!submodule.getObjectDatabase().has(walk.getObjectId())) {
+                        def fetchCommand = Git.wrap(submodule).fetch()
+                                .setRemote(REMOTE_NAME)
+                                .setRecurseSubmodules(SubmoduleConfig.FetchRecurseSubmodulesMode.NO)
+                        PluginSshSessionFactory sshFactory = null
+                        try {
+                            sshFactory = setupTransportAuthentication(sshConfig, fetchCommand)
+                            withPluginClassLoader { fetchCommand.call() }
+                        } finally {
+                            sshFactory?.close()
+                        }
+                    }
+                } finally {
+                    submodule.close()
+                }
+            }
+        } finally {
+            walk.close()
         }
     }
 
@@ -371,7 +461,7 @@ class GitManager {
 
     def gitCommitAndPush() {
 
-        if (isTagCheckedOut(repo)) {
+        if (repo != null && isTagCheckedOut(repo)) {
             throw new Exception("Cannot save nodes: tag ${branch} is checked out and tags are read-only. Configure a branch to edit nodes.")
         }
 
