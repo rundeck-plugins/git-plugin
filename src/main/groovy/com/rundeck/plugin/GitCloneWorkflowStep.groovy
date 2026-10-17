@@ -66,7 +66,7 @@ Some examples:
 * `ftp[s]://host.xz[:port]/path/to/repo.git/`
 * `rsync://host.xz/path/to/repo.git/`''', true,
                                                                                      null,null,null, renderingOptionsConfig))
-                                                       .property(PropertyUtil.string(GIT_BRANCH, "Branch", "Checkout branch.", true,
+                                                       .property(PropertyUtil.string(GIT_BRANCH, "Branch", "Branch or tag to check out. A tag is checked out as a detached HEAD: it is not pulled, but fetched again on each run in case it was moved.", true,
                                                                                      "master",null,null, renderingOptionsConfig))
                                                        .property(PropertyUtil.bool(GIT_LOG_DISABLE, "Disable log output", "Enabling this flag, the plugin will not show the output log", true,
                                                                                      "false",null, renderingOptionsConfig))

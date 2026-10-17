@@ -6,8 +6,11 @@ import org.eclipse.jgit.api.PullResult
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.transport.PushResult
 import org.eclipse.jgit.api.TransportCommand
+import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
+import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.URIish
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
@@ -112,6 +115,13 @@ class GitManager {
             if (found != this.gitURL) {
                 logger.debug("url differs, re-cloning ${found}!=${this.gitURL}")
                 needsClone = true
+            } else if (isTagCheckedOut(arepo)) {
+                // A tag is checked out as a detached HEAD, which cannot be
+                // pulled. Fetch the tag again, in case it was moved, and check
+                // out its commit.
+                agit.reset().setMode(ResetCommand.ResetType.HARD).call()
+                agit.clean().setCleanDirectories(true).setForce(true).call()
+                performTagCheckout(agit)
             } else if (agit.repository.getFullBranch() != "refs/heads/$branch") {
                 logger.debug("branch differs, re-cloning")
                 needsClone = true
@@ -162,6 +172,39 @@ class GitManager {
         repo = arepo
 
         performAdd(git, filePattern)
+    }
+
+    /**
+     * True when the configured branch name is a tag of the repository and
+     * HEAD is detached at that tag's commit, which is how a clone of a tag
+     * is checked out.
+     */
+    boolean isTagCheckedOut(Repository repository) {
+        if (!branch || !ObjectId.isId(repository.getFullBranch())) {
+            return false
+        }
+        ObjectId tagCommit = repository.resolve(Constants.R_TAGS + branch + '^{commit}')
+        return tagCommit != null && tagCommit == repository.resolve(Constants.HEAD)
+    }
+
+    private void performTagCheckout(Git git) {
+        String tagRef = Constants.R_TAGS + branch
+        def fetchCommand = git.fetch()
+                .setRemote(REMOTE_NAME)
+                .setRefSpecs(new RefSpec("+${tagRef}:${tagRef}"))
+
+        PluginSshSessionFactory sshFactory = null
+        try {
+            sshFactory = setupTransportAuthentication(sshConfig, fetchCommand, this.gitURL)
+            withPluginClassLoader { fetchCommand.call() }
+            ObjectId commit = git.repository.resolve(tagRef + '^{commit}')
+            git.checkout().setName(commit.name()).call()
+        } catch (Exception e) {
+            logger.debug("Failed fetching tag ${branch} from ${this.gitURL}: ${e.message}", e)
+            throw new Exception("Failed fetching tag ${branch} from ${this.gitURL}: ${e.message}", e)
+        } finally {
+            sshFactory?.close()
+        }
     }
 
     private void removeWorkdir(File base) {
@@ -218,6 +261,11 @@ class GitManager {
     }
 
     private void performPush(Git git) {
+        if (ObjectId.isId(git.repository.getFullBranch())) {
+            // setPushAll() pushes local branches; commits made on a detached
+            // HEAD, such as a checked out tag, are on none of them.
+            throw new Exception("Cannot push: HEAD is detached (for example a tag is checked out), so there is no branch to push.")
+        }
         def pushCommand = git.push()
                 .setPushAll()
 
@@ -323,6 +371,10 @@ class GitManager {
 
     def gitCommitAndPush() {
 
+        if (isTagCheckedOut(repo)) {
+            throw new Exception("Cannot save nodes: tag ${branch} is checked out and tags are read-only. Configure a branch to edit nodes.")
+        }
+
         ////PERFORM COMMIT
         git.add()
                 .addFilepattern(this.fileName)
@@ -385,7 +437,10 @@ class GitManager {
         //always perform a pull
         //TODO: check if it is needed check for the repo status
         //and perform the pull when the last commit is different to the last commit on the local repo
-        this.gitPull()
+        //a tag is a detached HEAD, which cannot be pulled; cloneOrCreate already re-fetched it
+        if (!isTagCheckedOut(repo)) {
+            this.gitPull()
+        }
 
         return file.newInputStream()
 
