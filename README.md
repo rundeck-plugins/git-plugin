@@ -47,7 +47,7 @@ You need to set up the following options to use the plugin:
     * `ftp[s]://host.xz[:port]/path/to/repo.git/`
     * `rsync://host.xz/path/to/repo.git/`
 
-* **Branch**: Checkout branch
+* **Branch**: Branch or tag to check out. A tag is checked out as a detached HEAD: it is not pulled, but fetched again on each run in case it was moved.
 * **Resource model File**: Resource model file inside the github repo. This is the file that will be added to Rundeck resource model.
 * **File Format**:  File format of the resource model, it could be xml, yaml, json
 * **Writable**: Allow to write the remote file
@@ -221,7 +221,7 @@ You need to set up following additional options to use the plugin:
 
 ##### Repo Settings
 
-* **Branch**: Checkout branch
+* **Branch**: Branch or tag to check out. A tag is checked out as a detached HEAD: it is not pulled, but fetched again on each run in case it was moved.
 
 
 ### GIT Push Workflow Step
@@ -329,7 +329,7 @@ Authentication: Git Password Storage Path → keys/git/password
 |--------------|-------------|---------------|
 | `gitUrl` | Git repository URL | `https://github.com/user/repo.git` |
 | `gitBaseDirectory` | Local checkout directory | `/var/rundeck/git-repos/project1` |
-| `gitBranch` | Branch to checkout | `main` or `develop` |
+| `gitBranch` | Branch or tag to check out | `main`, `develop` or `v1.2.0` |
 | `gitFile` | Resource model file in repo | `resources.yaml` |
 | `gitFormatFile` | File format | `xml`, `yaml`, or `json` |
 | `gitPasswordPath` | Plain text password | `mypassword` (not recommended) |
