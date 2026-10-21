@@ -100,7 +100,7 @@ See [addFilepattern](http://archive.eclipse.org/jgit/docs/jgit-2.0.0.20120613090
 
         }catch(Exception e){
             logger.log(0, e.getMessage())
-            throw new StepException("Error ${op} VM.", GitFailureReason.AuthenticationError)
+            throw new StepException("Error running git add: ${e.getMessage()}", e, GitFailureReason.AuthenticationError)
 
         }
 
